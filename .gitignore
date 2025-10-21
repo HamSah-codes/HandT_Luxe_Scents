@@ -1,0 +1,38 @@
+# Flask environment & instance data
+instance/
+.env
+.webassets-cache
+
+# Python cache & compiled files
+__pycache__/
+*.py[cod]
+*$py.class
+
+# SQLite database
+*.db
+*.sqlite3
+
+# Virtual environments
+venv/
+.venv/
+env/
+
+# Build / distribution files
+build/
+dist/
+*.egg-info/
+
+# Test & coverage
+.pytest_cache/
+.coverage
+htmlcov/
+
+# IDE / Editor settings
+.vscode/
+.idea/
+
+# OS-specific files
+Thumbs.db
+[Dd]esktop.ini
+$RECYCLE.BIN/
+*.lnk

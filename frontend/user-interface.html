@@ -1,0 +1,156 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>User Dashboard | H&T Luxe Scents</title>
+    <link rel="stylesheet" href="css/style.css">
+    <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;500;600&family=Montserrat:wght@300;400;500&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+</head>
+<body>
+    <!-- Navigation -->
+    <nav class="navbar">
+        <div class="nav-container">
+            <div class="nav-logo">
+                <h1>H&T Luxe Scents</h1>
+            </div>
+            <div class="nav-menu">
+                <a href="index.html" class="nav-link">Home</a>
+                <a href="#products" class="nav-link">Products</a>
+                <a href="#wishlist" class="nav-link">Wishlist</a>
+                <a href="#cart" class="nav-link">Cart</a>
+                <div class="nav-icons">
+                    <a href="#" class="icon-link"><i class="fas fa-search"></i></a>
+                    <a href="#" class="icon-link"><i class="fas fa-user"></i></a>
+                    <a href="#wishlist" class="icon-link"><i class="fas fa-heart"></i></a>
+                    <a href="#cart" class="icon-link"><i class="fas fa-shopping-bag"></i></a>
+                </div>
+            </div>
+            <div class="hamburger">
+                <span class="bar"></span>
+                <span class="bar"></span>
+                <span class="bar"></span>
+            </div>
+        </div>
+    </nav>
+
+    <!-- User Dashboard -->
+    <section class="user-dashboard">
+        <div class="container">
+            <h1 class="dashboard-title">Welcome to Your Dashboard</h1>
+            
+            <!-- Filter Section -->
+            <div class="filter-section">
+                <h2>Filter Products</h2>
+                <div class="filter-options">
+                    <select id="gender-filter">
+                        <option value="">All Genders</option>
+                        <option value="men">Men</option>
+                        <option value="women">Women</option>
+                        <option value="unisex">Unisex</option>
+                    </select>
+                    
+                    <select id="scent-filter">
+                        <option value="">All Scents</option>
+                        <option value="woody">Woody</option>
+                        <option value="floral">Floral</option>
+                        <option value="citrus">Citrus</option>
+                        <option value="oriental">Oriental</option>
+                    </select>
+                    
+                    <select id="brand-filter">
+                        <option value="">All Brands</option>
+                        <option value="ht-luxe">H&T Luxe</option>
+                        <option value="premium">Premium</option>
+                        <option value="exclusive">Exclusive</option>
+                    </select>
+                    
+                    <select id="mood-filter">
+                        <option value="">All Moods</option>
+                        <option value="romantic">Romantic</option>
+                        <option value="energetic">Energetic</option>
+                        <option value="calm">Calm</option>
+                        <option value="confident">Confident</option>
+                    </select>
+                    
+                    <select id="season-filter">
+                        <option value="">All Seasons</option>
+                        <option value="spring">Spring</option>
+                        <option value="summer">Summer</option>
+                        <option value="autumn">Autumn</option>
+                        <option value="winter">Winter</option>
+                    </select>
+                </div>
+            </div>
+
+            <!-- Products Section -->
+            <section id="products" class="products-section">
+                <h2 class="section-title">All Products</h2>
+                <div class="products-grid" id="all-products">
+                    <!-- Products loaded via JavaScript -->
+                </div>
+            </section>
+
+            <!-- Wishlist Section -->
+            <section id="wishlist" class="wishlist-section">
+                <h2 class="section-title">Your Wishlist</h2>
+                <div class="wishlist-grid" id="wishlist-items">
+                    <!-- Wishlist items loaded via JavaScript -->
+                </div>
+            </section>
+
+            <!-- Cart Section -->
+            <section id="cart" class="cart-section">
+                <h2 class="section-title">Your Cart</h2>
+                <div class="cart-items" id="cart-items">
+                    <!-- Cart items loaded via JavaScript -->
+                </div>
+                <div class="cart-summary">
+                    <div class="cart-total">
+                        <h3>Total: $<span id="cart-total">0.00</span></h3>
+                    </div>
+                    <button class="checkout-btn">Proceed to Checkout</button>
+                </div>
+            </section>
+
+            <!-- Reviews Section -->
+            <section class="reviews-section">
+                <h2 class="section-title">Your Reviews</h2>
+                <div class="reviews-container" id="user-reviews">
+                    <!-- User reviews loaded via JavaScript -->
+                </div>
+            </section>
+
+            <!-- Messaging Section -->
+            <section class="messaging-section">
+                <h2 class="section-title">Contact Us</h2>
+                <div class="messaging-content">
+                    <div class="direct-message">
+                        <h3>Send Direct Message</h3>
+                        <form id="direct-message-form">
+                            <div class="form-group">
+                                <input type="text" id="message-subject" placeholder="Subject" required>
+                            </div>
+                            <div class="form-group">
+                                <textarea id="direct-message" placeholder="Your Message" rows="5" required></textarea>
+                            </div>
+                            <button type="submit" class="submit-button">Send Message</button>
+                        </form>
+                    </div>
+                    <div class="whatsapp-contact">
+                        <h3>Quick Contact via WhatsApp</h3>
+                        <p>Get instant support through WhatsApp</p>
+                        <a href="https://wa.me/233591373371" class="whatsapp-button" target="_blank">
+                            <i class="fab fa-whatsapp"></i> Message on WhatsApp
+                        </a>
+                    </div>
+                </div>
+            </section>
+        </div>
+    </section>
+
+    <script src="js/main.js"></script>
+    <script src="js/user.js"></script>
+</body>
+</html>
