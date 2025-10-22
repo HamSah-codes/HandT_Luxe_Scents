@@ -46,7 +46,11 @@ def get_db_connection():
 def index():
     return render_template('index.html')
 
-@app.route('/user-interface')
+@app.route('/index.html')
+def index_html():
+    return render_template('index.html')
+
+@app.route('/user-interface.html')
 def user_interface():
     return render_template('user-interface.html')
 
