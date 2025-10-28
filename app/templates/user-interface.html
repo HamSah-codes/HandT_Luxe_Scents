@@ -1,0 +1,374 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>User Dashboard | H&T Luxe Scents</title>
+    <link rel="stylesheet" href="static/css/style.css">
+    <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;500;600&family=Montserrat:wght@300;400;500&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+</head>
+<body>
+
+    <!-- Navigation -->
+    <nav class="navbar">
+        <div class="nav-container">
+            <!-- Main Navigation -->
+            <div class="nav-main">
+                <!-- Hamburger Menu -->
+                <div class="hamburger">
+                    <span class="bar"></span>
+                    <span class="bar"></span>
+                    <span class="bar"></span>
+                </div>
+
+                <!-- Logo -->
+                <div class="nav-logo">
+                    <h1>H&T Luxe Scents</h1>
+                </div>
+
+                <!-- Navigation Menu -->
+                <div class="nav-menu">
+                    <a href="index.html" class="nav-link">Home</a>
+                    <a href="#shop" class="nav-link">Shop</a>
+                    <a href="#about" class="nav-link">About</a>
+                    <a href="#contact" class="nav-link">Contact</a>
+                </div>
+
+                <!-- Right Side Actions -->
+                <div class="nav-actions">
+                    <!-- Search Bar -->
+                    <div class="search-container">
+                        <input type="text" class="search-input" placeholder="Search fragrances...">
+                        <button class="search-btn">
+                            <i class="fas fa-search"></i>
+                        </button>
+                    </div>
+
+                    <!-- Action Icons -->
+                    <div class="nav-icons">
+                        <!-- Account Dropdown -->
+                        <div class="account-dropdown">
+                            <button class="account-toggle" id="account-toggle">
+                                <i class="fas fa-user"></i>
+                                <span class="account-text" id="account-text">Account</span>
+                                <i class="fas fa-chevron-down"></i>
+                            </button>
+                            <div class="account-menu">
+                                <!-- Content will be populated by JavaScript -->
+                            </div>
+                        </div>
+
+                        <!-- Wishlist -->
+                        <a href="#wishlist" class="icon-link" title="Wishlist">
+                            <i class="fas fa-heart"></i>
+                            <span class="icon-badge" id="wishlist-count">0</span>
+                        </a>
+
+                        <!-- Cart -->
+                        <a href="#cart" class="icon-link" title="Shopping Cart">
+                            <i class="fas fa-shopping-bag"></i>
+                            <span class="icon-badge" id="cart-count">0</span>
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Mobile Menu Overlay -->
+    <div class="mobile-menu-overlay">
+        <div class="mobile-menu-content">
+            <div class="mobile-menu-header">
+                <h3>Menu</h3>
+                <button class="close-mobile-menu">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+            
+            <div class="mobile-menu-sections">
+                <!-- Shop By Categories -->
+                <div class="mobile-menu-section">
+                    <h4>Shop By Category</h4>
+                    <div class="mobile-menu-links">
+                        <a href="#him" class="mobile-menu-link">
+                            <i class="fas fa-mars"></i>
+                            For Him
+                        </a>
+                        <a href="#her" class="mobile-menu-link">
+                            <i class="fas fa-venus"></i>
+                            For Her
+                        </a>
+                        <a href="#unisex" class="mobile-menu-link">
+                            <i class="fas fa-venus-mars"></i>
+                            Unisex
+                        </a>
+                        <a href="#luxury" class="mobile-menu-link">
+                            <i class="fas fa-crown"></i>
+                            Luxury Brands
+                        </a>
+                        <a href="#gifts" class="mobile-menu-link">
+                            <i class="fas fa-gift"></i>
+                            Gift Sets
+                        </a>
+                        <a href="#new" class="mobile-menu-link new">
+                            <i class="fas fa-star"></i>
+                            What's New
+                        </a>
+                        <a href="#clearance" class="mobile-menu-link sale">
+                            <i class="fas fa-tag"></i>
+                            Clearance
+                        </a>
+                    </div>
+                </div>
+
+                <!-- Collections -->
+                <div class="mobile-menu-section">
+                    <h4>Collections</h4>
+                    <div class="mobile-menu-links">
+                        <a href="#seasonal" class="mobile-menu-link">Seasonal Collection</a>
+                        <a href="#limited" class="mobile-menu-link">Limited Edition</a>
+                        <a href="#best" class="mobile-menu-link">Best Sellers</a>
+                    </div>
+                </div>
+
+                <!-- Main Navigation in Mobile -->
+                <div class="mobile-menu-section">
+                    <div class="mobile-menu-links">
+                        <a href="index.html" class="mobile-menu-link">Home</a>
+                        <a href="#shop" class="mobile-menu-link">Shop</a>
+                        <a href="#about" class="mobile-menu-link">About</a>
+                        <a href="#contact" class="mobile-menu-link">Contact</a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+                        
+
+    
+    <!-- User Dashboard -->
+    <section class="user-dashboard">
+        <div class="container">
+            <h1 class="dashboard-title">Welcome to Your Dashboard</h1>
+            
+            <!-- Filter Section -->
+            <div class="filter-section">
+                <h2>Filter Products</h2>
+                <div class="filter-options">
+                    <select id="gender-filter">
+                        <option value="">All Genders</option>
+                        <option value="men">Men</option>
+                        <option value="women">Women</option>
+                        <option value="unisex">Unisex</option>
+                    </select>
+                    
+                    <select id="scent-filter">
+                        <option value="">All Scents</option>
+                        <option value="woody">Woody</option>
+                        <option value="floral">Floral</option>
+                        <option value="citrus">Citrus</option>
+                        <option value="oriental">Oriental</option>
+                    </select>
+                    
+                    <select id="brand-filter">
+                        <option value="">All Brands</option>
+                        <option value="ht-luxe">H&T Luxe</option>
+                        <option value="premium">Premium</option>
+                        <option value="exclusive">Exclusive</option>
+                    </select>
+                    
+                    <select id="mood-filter">
+                        <option value="">All Moods</option>
+                        <option value="romantic">Romantic</option>
+                        <option value="energetic">Energetic</option>
+                        <option value="calm">Calm</option>
+                        <option value="confident">Confident</option>
+                    </select>
+                    
+                    <select id="season-filter">
+                        <option value="">All Seasons</option>
+                        <option value="spring">Spring</option>
+                        <option value="summer">Summer</option>
+                        <option value="autumn">Autumn</option>
+                        <option value="winter">Winter</option>
+                    </select>
+                </div>
+            </div>
+
+            <!-- Products Section -->
+            <section id="products" class="products-section">
+                <h2 class="section-title">All Products</h2>
+                <div class="products-grid" id="all-products">
+                    <!-- Products loaded via JavaScript -->
+                </div>
+            </section>
+
+            <!-- Wishlist Section -->
+            <section id="wishlist" class="wishlist-section">
+                <h2 class="section-title">Your Wishlist</h2>
+                <div class="wishlist-grid" id="wishlist-items">
+                    <!-- Wishlist items loaded via JavaScript -->
+                </div>
+            </section>
+
+            <!-- Cart Section -->
+            <section id="cart" class="cart-section">
+                <h2 class="section-title">Your Cart</h2>
+                <div class="cart-items" id="cart-items">
+                    <!-- Cart items loaded via JavaScript -->
+                </div>
+                <div class="cart-summary">
+                    <div class="cart-total">
+                        <h3>Total: $<span id="cart-total">0.00</span></h3>
+                    </div>
+                    <button class="checkout-btn">Proceed to Checkout</button>
+                </div>
+            </section>
+
+            <!-- Reviews Section -->
+            <section class="reviews-section">
+                <h2 class="section-title">Your Reviews</h2>
+                <div class="reviews-container" id="user-reviews">
+                    <!-- User reviews loaded via JavaScript -->
+                </div>
+            </section>
+
+            <!-- Messaging Section -->
+            <section class="messaging-section">
+                <h2 class="section-title">Contact Us</h2>
+                <div class="messaging-content">
+                    <div class="direct-message">
+                        <h3>Send Direct Message</h3>
+                        <form id="direct-message-form">
+                            <div class="form-group">
+                                <input type="text" id="message-subject" placeholder="Subject" required>
+                            </div>
+                            <div class="form-group">
+                                <textarea id="direct-message" placeholder="Your Message" rows="5" required></textarea>
+                            </div>
+                            <button type="submit" class="submit-button">Send Message</button>
+                        </form>
+                    </div>
+                    <div class="whatsapp-contact">
+                        <h3>Quick Contact via WhatsApp</h3>
+                        <p>Get instant support through WhatsApp</p>
+                        <a href="https://wa.me/233591373371" class="whatsapp-button" target="_blank">
+                            <i class="fab fa-whatsapp"></i> Message on WhatsApp
+                        </a>
+                    </div>
+                </div>
+            </section>
+        </div>
+    </section>
+
+
+    <!-- Login Modal -->
+    <div id="login-modal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3>Login to Your Account</h3>
+                <button class="close-modal">&times;</button>
+            </div>
+            <form id="login-form">
+                <div class="form-group">
+                    <input type="email" placeholder="Email" required>
+                </div>
+                <div class="form-group">
+                    <input type="password" placeholder="Password" required>
+                </div>
+                <button type="submit" class="submit-button">Login</button>
+            </form>
+        </div>
+    </div>
+
+    <!-- Signup Modal -->
+    <div id="signup-modal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3>Create Account</h3>
+                <button class="close-modal">&times;</button>
+            </div>
+            <form id="signup-form">
+                <div class="form-group">
+                    <input type="text" placeholder="Full Name" required>
+                </div>
+                <div class="form-group">
+                    <input type="email" placeholder="Email" required>
+                </div>
+                <div class="form-group">
+                    <input type="password" placeholder="Password" required>
+                </div>
+                <div class="form-group">
+                    <input type="password" placeholder="Confirm Password" required>
+                </div>
+                <button type="submit" class="submit-button">Create Account</button>
+            </form>
+        </div>
+    </div>
+
+    <script src="static/js/user.js"></script>
+    <script src="static/js/main.js"></script>
+
+
+    <!-- Login Modal -->
+    <div id="login-modal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3>Welcome Back</h3>
+                <button class="close-modal">&times;</button>
+            </div>
+            <form id="login-form">
+                <div class="form-group">
+                    <input type="email" id="login-email" placeholder="Email Address" required>
+                </div>
+                <div class="form-group">
+                    <input type="password" id="login-password" placeholder="Password" required>
+                </div>
+                <button type="submit" class="submit-button" style="width: 100%;">
+                    <i class="fas fa-sign-in-alt"></i> Sign In
+                </button>
+            </form>
+            <div style="text-align: center; margin-top: 20px; padding-top: 20px; border-top: 1px solid var(--light-gray);">
+                <p style="color: var(--charcoal); margin-bottom: 15px;">Don't have an account?</p>
+                <button type="button" class="submit-button" style="background: transparent; color: var(--navy); border: 2px solid var(--navy);" onclick="switchToSignup()">
+                    Create Account
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Signup Modal -->
+    <div id="signup-modal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3>Create Account</h3>
+                <button class="close-modal">&times;</button>
+            </div>
+            <form id="signup-form">
+                <div class="form-group">
+                    <input type="text" id="signup-name" placeholder="Full Name" required>
+                </div>
+                <div class="form-group">
+                    <input type="email" id="signup-email" placeholder="Email Address" required>
+                </div>
+                <div class="form-group">
+                    <input type="password" id="signup-password" placeholder="Password" required minlength="6">
+                </div>
+                <div class="form-group">
+                    <input type="password" id="signup-confirm-password" placeholder="Confirm Password" required>
+                </div>
+                <button type="submit" class="submit-button" style="width: 100%;">
+                    <i class="fas fa-user-plus"></i> Create Account
+                </button>
+            </form>
+            <div style="text-align: center; margin-top: 20px; padding-top: 20px; border-top: 1px solid var(--light-gray);">
+                <p style="color: var(--charcoal); margin-bottom: 15px;">Already have an account?</p>
+                <button type="button" class="submit-button" style="background: transparent; color: var(--navy); border: 2px solid var(--navy);" onclick="switchToLogin()">
+                    Sign In
+                </button>
+            </div>
+        </div>
+    </div>
+</body>
+</html>

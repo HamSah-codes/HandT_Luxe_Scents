@@ -70,6 +70,72 @@ let discounts = [
     { code: "WELCOME10", percentage: 10, startDate: "2023-10-01", endDate: "2023-12-31", status: "Active" }
 ];
 
+
+// Alert function for admin
+function showAlert(message, type = 'info') {
+    const existingAlert = document.querySelector('.alert-message');
+    if (existingAlert) {
+        existingAlert.remove();
+    }
+
+    const alertElement = document.createElement('div');
+    alertElement.className = `alert-message alert-${type}`;
+    alertElement.innerHTML = `
+        <div style="display: flex; align-items: center; gap: 10px;">
+            <i class="fas ${type === 'success' ? 'fa-check-circle' : type === 'error' ? 'fa-exclamation-triangle' : 'fa-info-circle'}"></i>
+            <span>${message}</span>
+        </div>
+    `;
+    
+    alertElement.style.cssText = `
+        position: fixed;
+        top: 120px;
+        right: 20px;
+        padding: 15px 20px;
+        border-radius: 12px;
+        color: white;
+        font-weight: 600;
+        z-index: 3000;
+        animation: slideIn 0.3s ease;
+        min-width: 300px;
+        backdrop-filter: blur(10px);
+        ${type === 'success' ? 
+            'background: linear-gradient(135deg, rgba(39, 174, 96, 0.95), rgba(46, 204, 113, 0.95));' : 
+            type === 'error' ?
+            'background: linear-gradient(135deg, rgba(231, 76, 60, 0.95), rgba(192, 57, 43, 0.95));' :
+            'background: linear-gradient(135deg, rgba(52, 152, 219, 0.95), rgba(41, 128, 185, 0.95));'
+        }
+        box-shadow: 0 8px 32px rgba(0,0,0,0.2);
+        border: 1px solid rgba(255,255,255,0.2);
+    `;
+
+    document.body.appendChild(alertElement);
+
+    setTimeout(() => {
+        alertElement.style.animation = 'slideOut 0.3s ease';
+        setTimeout(() => alertElement.remove(), 300);
+    }, 4000);
+}
+
+// Add CSS for alert animations (only if not already added)
+if (!document.querySelector('style[data-alert-animations]')) {
+    const alertStyle = document.createElement('style');
+    alertStyle.setAttribute('data-alert-animations', 'true');
+    alertStyle.textContent = `
+        @keyframes slideIn {
+            from { transform: translateX(100%); opacity: 0; }
+            to { transform: translateX(0); opacity: 1; }
+        }
+        
+        @keyframes slideOut {
+            from { transform: translateX(0); opacity: 1; }
+            to { transform: translateX(100%); opacity: 0; }
+        }
+    `;
+    document.head.appendChild(alertStyle);
+}
+
+
 // Login functionality
 function setupLogin() {
     const loginForm = document.getElementById('login-form');
@@ -89,7 +155,7 @@ function setupLogin() {
                 // Initialize dashboard
                 initializeDashboard();
             } else {
-                alert('Invalid credentials! Please try again.');
+                showAlert('Invalid credentials! Please try again.', 'error');
             }
         });
     }
@@ -106,6 +172,7 @@ function setupLogout() {
             
             // Clear form fields
             document.getElementById('login-form').reset();
+            showAlert('Logged out successfully', 'info');
         });
     }
 }
@@ -365,7 +432,7 @@ function setupProductForm() {
             document.getElementById('add-product-form').style.display = 'none';
             this.reset();
             
-            alert('Product added successfully!');
+            showAlert('Product added successfully!', 'success');
         });
     }
     
@@ -417,7 +484,7 @@ function setupCategoryForm() {
             document.getElementById('add-category-form').style.display = 'none';
             this.reset();
             
-            alert('Category added successfully!');
+            showAlert('Category added successfully!', 'success');
         });
     }
 }
@@ -459,7 +526,7 @@ function setupDiscountForm() {
             document.getElementById('add-discount-form').style.display = 'none';
             this.reset();
             
-            alert('Discount added successfully!');
+            showAlert('Discount added successfully!', 'info');
         });
     }
 }
@@ -471,7 +538,7 @@ function editProduct(e) {
     
     if (product) {
         // In a real app, this would open an edit form with pre-filled data
-        alert(`Editing product: ${product.name}`);
+        showAlert(`Editing product: ${product.name}`, 'info');
     }
 }
 
@@ -482,7 +549,7 @@ function deleteProduct(e) {
         adminProducts = adminProducts.filter(p => p.id !== productId);
         displayProducts();
         updateStats();
-        alert('Product deleted successfully!');
+        showAlert('Product deleted successfully!', 'info');
     }
 }
 
