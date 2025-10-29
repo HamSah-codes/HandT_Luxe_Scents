@@ -737,7 +737,59 @@ if (!document.querySelector('style[data-alert-animations]')) {
 }
 
 
+// ==================== CHRISTMAS BANNER FUNCTIONALITY ====================
 
+function initChristmasBanner() {
+    const banner = document.querySelector('.sticky-banner');
+    const closeBtn = document.querySelector('.close-banner');
+    
+    if (!banner) return;
+    
+    // Check if user previously closed the banner
+    if (sessionStorage.getItem('bannerClosed') !== 'true') {
+        showBanner();
+    }
+    
+    // Close button functionality
+    if (closeBtn) {
+        closeBtn.addEventListener('click', closeBanner);
+    }
+    
+    // Make phone number clickable
+    const phoneNumber = document.querySelector('.phone-number');
+    if (phoneNumber) {
+        phoneNumber.addEventListener('click', function() {
+            window.open('tel:+233591373371');
+        });
+    }
+    
+    // Close on escape key
+    document.addEventListener('keydown', function(e) {
+        if (e.key === 'Escape') closeBanner();
+    });
+}
+
+function showBanner() {
+    const banner = document.querySelector('.sticky-banner');
+    if (banner) {
+        banner.style.display = 'block';
+        document.body.classList.add('banner-visible');
+    }
+}
+
+function closeBanner() {
+    const banner = document.querySelector('.sticky-banner');
+    if (banner) {
+        banner.style.display = 'none';
+        document.body.classList.remove('banner-visible');
+        sessionStorage.setItem('bannerClosed', 'true');
+    }
+}
+
+// Initialize banner when DOM is loaded
+document.addEventListener('DOMContentLoaded', function() {
+    initChristmasBanner();
+});
 
 
 

@@ -59,6 +59,314 @@ h1, h2, h3, h4, h5, h6 {
 }
 
 
+/* ==================== CHRISTMAS STICKY BANNER ==================== */
+
+.sticky-banner {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    background: linear-gradient(135deg, #2d4156 0%, #1b324b 50%, #00152c 100%);
+    background-size: 200% 200%;
+    animation: gradientShift 4s ease infinite;
+    color: white;
+    padding: 12px 0;
+    z-index: 10000;
+    box-shadow: 0 2px 20px rgba(0,0,0,0.3);
+    border-bottom: 2px solid #d4af37;
+    display: none; /* Hidden by default */
+}
+
+@keyframes gradientShift {
+    0%, 100% { background-position: 0% 50%; }
+    50% { background-position: 100% 50%; }
+}
+
+.banner-container {
+    max-width: 1400px;
+    margin: 0 auto;
+    padding: 0 40px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    position: relative;
+}
+
+/* Left Section - Christmas Sales */
+.banner-left .christmas-text {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    font-weight: 700;
+    font-size: 1.1rem;
+    color: #d4af37;
+    text-shadow: 0 2px 4px rgba(0,0,0,0.3);
+    animation: glow 2s ease-in-out infinite alternate;
+}
+
+@keyframes glow {
+    from { text-shadow: 0 2px 4px rgba(0,0,0,0.3); }
+    to { text-shadow: 0 2px 20px #d4af37, 0 2px 4px rgba(0,0,0,0.3); }
+}
+
+.banner-left .christmas-text i {
+    animation: bounce 1s ease infinite;
+}
+
+@keyframes bounce {
+    0%, 100% { transform: translateY(0); }
+    50% { transform: translateY(-3px); }
+}
+
+/* Middle Section - Animated Text */
+.banner-middle {
+    flex: 1;
+    text-align: center;
+    margin: 0 20px;
+}
+
+.text-container {
+    position: relative;
+    height: 40px;
+    overflow: hidden;
+}
+
+.text-slider {
+    position: absolute;
+    width: 100%;
+    animation: slideText 8s ease-in-out infinite;
+}
+
+@keyframes slideText {
+    /* COMING SOON visible */
+    0%, 40% {
+        transform: translateY(0);
+    }
+    /* COMING SOON slides up and disappears */
+    45%, 50% {
+        transform: translateY(-40px);
+    }
+    /* DISCOUNT BADGE visible */
+    55%, 90% {
+        transform: translateY(-40px);
+    }
+    /* DISCOUNT BADGE slides down and disappears, COMING SOON returns */
+    95%, 100% {
+        transform: translateY(0);
+    }
+}
+
+.slide {
+    display: block;
+    height: 40px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: 600;
+    font-size: 1.2rem;
+}
+
+.coming-soon {
+    color: #ffffff;
+    text-shadow: 0 2px 4px rgba(0,0,0,0.3);
+}
+
+.discount-badge {
+    background: linear-gradient(135deg, #d4af37, #f4e4b7);
+    color: #1a472a;
+    padding: 0px 20px;
+    border-radius: 25px;
+    font-weight: 700;
+    font-size: 1.1rem;
+    box-shadow: 0 4px 15px rgba(212, 175, 55, 0.4);
+    animation: pulseBadge 2s ease-in-out infinite;
+    border: 2px solid #ffffff;
+}
+
+@keyframes pulseBadge {
+    0%, 100% { transform: scale(1); }
+    50% { transform: scale(1.05); }
+}
+
+/* Right Section - Call to Order */
+.banner-right .order-section {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-end;
+   line-height: 1;
+}
+
+.order-text {
+    font-weight: 600;
+    font-size: 1.0rem;
+    color: #d4af37;
+    text-shadow: 0 1px 2px rgba(0,0,0,0.3);
+}
+
+.phone-number {
+    font-weight: 700;
+    font-size: 1.5rem;
+    color: #ffffff;
+    text-shadow: 0 2px 4px rgba(0,0,0,0.3);
+    animation: shake 3s ease-in-out infinite;
+    cursor: pointer;
+    margin-top: -2px;
+}
+
+@keyframes shake {
+    0%, 90%, 100% { transform: translateX(0); }
+    92%, 96% { transform: translateX(-2px); }
+    94%, 98% { transform: translateX(2px); }
+}
+
+/* Close Button 
+.close-banner {
+    position: absolute;
+    right: 10px;
+    top: 50%;
+    transform: translateY(-50%);
+    background: rgba(255,255,255,0.2);
+    border: none;
+    color: white;
+    width: 30px;
+    height: 30px;
+    border-radius: 50%;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.3s ease;
+    font-size: 0.9rem;
+}
+
+.close-banner:hover {
+    background: rgba(255,255,255,0.3);
+    transform: translateY(-50%) scale(1.1);
+}*/
+
+/* Adjust body padding when banner is visible */
+body.banner-visible {
+    padding-top: 70px;
+}
+
+/* Adjust navbar position when banner is visible */
+.banner-visible .navbar {
+    top: 70px;
+}
+
+/* Adjust dashboard when banner is visible */
+.banner-visible .dashboard-container {
+    padding-top: 90px;
+}
+
+/* Responsive Design for Banner */
+@media (max-width: 768px) {
+    .banner-container {
+        padding: 0 20px;
+        flex-direction: column;
+        gap: 10px;
+        text-align: center;
+    }
+    
+    .banner-middle {
+        margin: 0;
+        order: 1;
+        width: 100%;
+    }
+    
+    .banner-left,
+    .banner-right {
+        order: 2;
+    }
+    
+    .banner-right .order-section {
+        align-items: center;
+    }
+    
+    .christmas-text,
+    .slide {
+        font-size: 1rem;
+    }
+    
+    .discount-badge {
+        padding: 6px 15px;
+        font-size: 1rem;
+    }
+    
+    .text-container {
+        height: 35px;
+    }
+    
+    @keyframes slideText {
+        0%, 45% { transform: translateY(0); }
+        50%, 95% { transform: translateY(-35px); }
+        100% { transform: translateY(0); }
+    }
+    
+    body.banner-visible {
+        padding-top: 110px;
+    }
+    
+    .banner-visible .navbar {
+        top: 110px;
+    }
+    
+    .banner-visible .dashboard-container {
+        padding-top: 130px;
+    }
+}
+
+@media (max-width: 480px) {
+    .sticky-banner {
+        padding: 8px 0;
+    }
+    
+    .banner-container {
+        padding: 0 15px;
+        gap: 8px;
+    }
+    
+    .christmas-text {
+        font-size: 0.9rem;
+    }
+    
+    .slide {
+        font-size: 1rem;
+    }
+    
+    .discount-badge {
+        padding: 5px 12px;
+        font-size: 0.9rem;
+    }
+    
+    .order-text {
+        font-size: 0.8rem;
+    }
+    
+    .phone-number {
+        font-size: 1rem;
+    }
+    
+    .close-banner {
+        right: 5px;
+        width: 25px;
+        height: 25px;
+        font-size: 0.8rem;
+    }
+    
+    body.banner-visible {
+        padding-top: 100px;
+    }
+    
+    .banner-visible .navbar {
+        top: 100px;
+    }
+    
+    .banner-visible .dashboard-container {
+        padding-top: 120px;
+    }
+}
+
 /* Main Navigation Container */
 .navbar {
     background: rgba(255, 255, 255, 0.98);
@@ -1305,7 +1613,7 @@ h1, h2, h3, h4, h5, h6 {
 
 /* User Dashboard Styles */
 .user-dashboard {
-    padding: 200px 0 50px; /* Increased for taller navbar */
+    padding: 0px 0 50px; /* Increased for taller navbar */
     min-height: 100vh;
 }
 
