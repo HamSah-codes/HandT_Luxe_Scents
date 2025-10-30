@@ -1,5 +1,5 @@
 from flask import jsonify, request, session
-from backend.models import Product, Category, Message, Review, User
+from app.models import Product, Category, Message, Review, User
 import sqlite3
 
 # Database connection helper (duplicated from app.py for routes module)

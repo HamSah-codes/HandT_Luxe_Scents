@@ -1,0 +1,396 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>H&T Luxe Scents | Premium Fragrances</title>
+    <link rel="stylesheet" href="static/css/style.css">
+    <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;500;600&family=Montserrat:wght@300;400;500&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+</head>
+<body>
+    <!-- Christmas Sticky Banner -->
+    <div class="sticky-banner">
+        <div class="banner-container">
+            <div class="banner-left">
+                <span class="christmas-text">
+                    <i class="fas fa-gift"></i>
+                    CHRISTMAS SALES
+                </span>
+            </div>
+            
+            <div class="banner-middle">
+                <div class="text-container">
+                    <div class="text-slider">
+                        <span class="slide coming-soon">COMING SOON...</span>
+                        <span class="slide discount-offer">
+                            <span class="discount-badge">UP TO 50% OFF</span>
+                        </span>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="banner-right">
+                <div class="order-section">
+                    <span class="order-text">CALL TO ORDER</span>
+                    <span class="phone-number">0591373371</span>
+                </div>
+            </div>
+        
+        </div>
+    </div>
+        
+    <!-- Navigation -->
+    <nav class="navbar">
+        <div class="nav-container">
+            <!-- Main Navigation -->
+            <div class="nav-main">
+                <!-- Hamburger Menu -->
+                <div class="hamburger">
+                    <span class="bar"></span>
+                    <span class="bar"></span>
+                    <span class="bar"></span>
+                </div>
+
+                <!-- Logo -->
+                <div class="nav-logo">
+                    <h1>H&T Luxe Scents</h1>
+                </div>
+
+                <!-- Navigation Menu -->
+                <div class="nav-menu">
+                    <a href="index.html" class="nav-link">Home</a>
+                    <a href="#shop" class="nav-link">Shop</a>
+                    <a href="#about" class="nav-link">About</a>
+                    <a href="#contact" class="nav-link">Contact</a>
+                </div>
+
+                <!-- Right Side Actions -->
+                <div class="nav-actions">
+                    <!-- Search Bar -->
+                    <div class="search-container">
+                        <input type="text" class="search-input" placeholder="Search fragrances...">
+                        <button class="search-btn">
+                            <i class="fas fa-search"></i>
+                        </button>
+                    </div>
+
+                    <!-- Action Icons -->
+                    <div class="nav-icons">
+                        <!-- Account Dropdown -->
+                        <div class="account-dropdown">
+                            <button class="account-toggle" id="account-toggle">
+                                <i class="fas fa-user"></i>
+                                <span class="account-text" id="account-text">Account</span>
+                                <i class="fas fa-chevron-down"></i>
+                            </button>
+                            <div class="account-menu">
+                                <!-- Content will be populated by JavaScript -->
+                            </div>
+                        </div>
+
+                        <!-- Wishlist -->
+                        <a href="#wishlist" class="icon-link" title="Wishlist">
+                            <i class="fas fa-heart"></i>
+                            <span class="icon-badge" id="wishlist-count">0</span>
+                        </a>
+
+                        <!-- Cart -->
+                        <a href="#cart" class="icon-link" title="Shopping Cart">
+                            <i class="fas fa-shopping-bag"></i>
+                            <span class="icon-badge" id="cart-count">0</span>
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Mobile Menu Overlay -->
+    <div class="mobile-menu-overlay">
+        <div class="mobile-menu-content">
+            <div class="mobile-menu-header">
+                <h3>Menu</h3>
+                <button class="close-mobile-menu">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+            
+            <div class="mobile-menu-sections">
+                <!-- Shop By Categories -->
+                <div class="mobile-menu-section">
+                    <h4>Shop By Category</h4>
+                    <div class="mobile-menu-links">
+                        <a href="#him" class="mobile-menu-link">
+                            <i class="fas fa-mars"></i>
+                            For Him
+                        </a>
+                        <a href="#her" class="mobile-menu-link">
+                            <i class="fas fa-venus"></i>
+                            For Her
+                        </a>
+                        <a href="#unisex" class="mobile-menu-link">
+                            <i class="fas fa-venus-mars"></i>
+                            Unisex
+                        </a>
+                        <a href="#luxury" class="mobile-menu-link">
+                            <i class="fas fa-crown"></i>
+                            Luxury Brands
+                        </a>
+                        <a href="#gifts" class="mobile-menu-link">
+                            <i class="fas fa-gift"></i>
+                            Gift Sets
+                        </a>
+                        <a href="#new" class="mobile-menu-link new">
+                            <i class="fas fa-star"></i>
+                            What's New
+                        </a>
+                        <a href="#clearance" class="mobile-menu-link sale">
+                            <i class="fas fa-tag"></i>
+                            Clearance
+                        </a>
+                    </div>
+                </div>
+
+                <!-- Collections -->
+                <div class="mobile-menu-section">
+                    <h4>Collections</h4>
+                    <div class="mobile-menu-links">
+                        <a href="#seasonal" class="mobile-menu-link">Seasonal Collection</a>
+                        <a href="#limited" class="mobile-menu-link">Limited Edition</a>
+                        <a href="#best" class="mobile-menu-link">Best Sellers</a>
+                    </div>
+                </div>
+
+                <!-- Main Navigation in Mobile -->
+                <div class="mobile-menu-section">
+                    <div class="mobile-menu-links">
+                        <a href="index.html" class="mobile-menu-link">Home</a>
+                        <a href="#shop" class="mobile-menu-link">Shop</a>
+                        <a href="#about" class="mobile-menu-link">About</a>
+                        <a href="#contact" class="mobile-menu-link">Contact</a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+                        
+                    
+    <!-- Hero Section -->
+    <section id="home" class="hero">
+        <div class="hero-content">
+            <h1 class="hero-title">Elegance in Every Scent</h1>
+            <p class="hero-subtitle">Discover our exclusive collection of premium fragrances crafted for the discerning individual.</p>
+            <a href="#shop" class="cta-button">Shop Now</a>
+        </div>
+        <div class="hero-image">
+            <img src="https://images.unsplash.com/photo-1544468266-6a8948001c78?ixlib=rb-4.0.3&auto=format&fit=crop&w=1000&q=80" alt="Luxury Fragrances">
+        </div>
+    </section>
+
+    <!-- Featured Products -->
+    <section id="shop" class="featured-products">
+        <div class="container">
+            <h2 class="section-title">Featured Fragrances</h2>
+            <div class="products-grid" id="featured-products">
+                <!-- Products will be loaded via JavaScript -->
+            </div>
+        </div>
+    </section>
+
+    <!-- Collections -->
+    <section id="collections" class="collections">
+        <div class="container">
+            <h2 class="section-title">Our Collections</h2>
+            <div class="collections-grid">
+                <div class="collection-card">
+                    <div class="collection-image">
+                        <img src="https://images.unsplash.com/photo-1590736969953-7ce4d1c63f55?ixlib=rb-4.0.3&auto=format&fit=crop&w=500&q=80" alt="Men's Collection">
+                    </div>
+                    <div class="collection-info">
+                        <h3>For Him</h3>
+                        <p>Bold, sophisticated scents for the modern gentleman</p>
+                        <a href="#" class="collection-link">Explore</a>
+                    </div>
+                </div>
+                <div class="collection-card">
+                    <div class="collection-image">
+                        <img src="https://images.unsplash.com/photo-1590737400275-54a5c7f4ecc8?ixlib=rb-4.0.3&auto=format&fit=crop&w=500&q=80" alt="Women's Collection">
+                    </div>
+                    <div class="collection-info">
+                        <h3>For Her</h3>
+                        <p>Elegant, captivating fragrances for the contemporary woman</p>
+                        <a href="#" class="collection-link">Explore</a>
+                    </div>
+                </div>
+                <div class="collection-card">
+                    <div class="collection-image">
+                        <img src="https://images.unsplash.com/photo-1544468266-6a8948001c78?ixlib=rb-4.0.3&auto=format&fit=crop&w=500&q=80" alt="Unisex Collection">
+                    </div>
+                    <div class="collection-info">
+                        <h3>Unisex</h3>
+                        <p>Versatile scents that transcend gender boundaries</p>
+                        <a href="#" class="collection-link">Explore</a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- About Section -->
+    <section id="about" class="about">
+        <div class="container">
+            <div class="about-content">
+                <div class="about-text">
+                    <h2 class="section-title">About H&T Luxe Scents</h2>
+                    <p>Founded with a passion for exquisite fragrances, H&T Luxe Scents brings you carefully curated scents from around the world. Our mission is to help you find the perfect fragrance that complements your personality and style.</p>
+                    <p>Each scent in our collection is meticulously selected for its quality, uniqueness, and ability to evoke emotions and memories.</p>
+                </div>
+                <div class="about-image">
+                    <img src="https://images.unsplash.com/photo-1615634376654-13d0e6b6db5c?ixlib=rb-4.0.3&auto=format&fit=crop&w=500&q=80" alt="About H&T Luxe Scents">
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Contact Section -->
+    <section id="contact" class="contact">
+        <div class="container">
+            <h2 class="section-title">Get In Touch</h2>
+            <div class="contact-content">
+                <div class="contact-info">
+                    <h3>Contact Information</h3>
+                    <p><i class="fas fa-phone"></i> +233 591 373 371</p>
+                    <p><i class="fas fa-envelope"></i> info@htluxescents.com</p>
+                    <p><i class="fas fa-map-marker-alt"></i> Accra, Ghana</p>
+                    <a href="https://wa.me/233591373371" class="whatsapp-button" target="_blank">
+                        <i class="fab fa-whatsapp"></i> Message us on WhatsApp
+                    </a>
+                </div>
+                <div class="contact-form">
+                    <h3>Send us a Message</h3>
+                    <form id="message-form">
+                        <div class="form-group">
+                            <input type="text" id="name" name="name" placeholder="Your Name" required>
+                        </div>
+                        <div class="form-group">
+                            <input type="email" id="email" name="email" placeholder="Your Email" required>
+                        </div>
+                        <div class="form-group">
+                            <textarea id="message" name="message" placeholder="Your Message" rows="5" required></textarea>
+                        </div>
+                        <button type="submit" class="submit-button">Send Message</button>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Footer -->
+    <footer class="footer">
+        <div class="container">
+            <div class="footer-content">
+                <div class="footer-section">
+                    <h3>H&T Luxe Scents</h3>
+                    <p>Elegance in every scent. Premium fragrances for the discerning individual.</p>
+                </div>
+                <div class="footer-section">
+                    <h4>Quick Links</h4>
+                    <ul>
+                        <li><a href="#home">Home</a></li>
+                        <li><a href="#shop">Shop</a></li>
+                        <li><a href="#collections">Collections</a></li>
+                        <li><a href="#about">About</a></li>
+                        <li><a href="#contact">Contact</a></li>
+                    </ul>
+                </div>
+                <div class="footer-section">
+                    <h4>Customer Service</h4>
+                    <ul>
+                        <li><a href="#">Shipping & Returns</a></li>
+                        <li><a href="#">Privacy Policy</a></li>
+                        <li><a href="#">Terms & Conditions</a></li>
+                        <li><a href="#">FAQ</a></li>
+                    </ul>
+                </div>
+                <div class="footer-section">
+                    <h4>Connect With Us</h4>
+                    <div class="social-icons">
+                        <a href="#"><i class="fab fa-facebook-f"></i></a>
+                        <a href="#"><i class="fab fa-instagram"></i></a>
+                        <a href="#"><i class="fab fa-twitter"></i></a>
+                        <a href="#"><i class="fab fa-pinterest-p"></i></a>
+                    </div>
+                </div>
+            </div>
+            <div class="footer-bottom">
+                <p>&copy; 2023 H&T Luxe Scents. All rights reserved.</p>
+                <a href="admin-interface.html" class="admin-link">Admin Login</a>
+            </div>
+        </div>
+    </footer>
+
+    <script src="static/js/main.js"></script>
+
+    <!-- Login Modal -->
+    <div id="login-modal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3>Welcome Back</h3>
+                <button class="close-modal">&times;</button>
+            </div>
+            <form id="login-form">
+                <div class="form-group">
+                    <input type="email" id="login-email" placeholder="Email Address" required>
+                </div>
+                <div class="form-group">
+                    <input type="password" id="login-password" placeholder="Password" required>
+                </div>
+                <button type="submit" class="submit-button" style="width: 100%;">
+                    <i class="fas fa-sign-in-alt"></i> Sign In
+                </button>
+            </form>
+            <div style="text-align: center; margin-top: 20px; padding-top: 20px; border-top: 1px solid var(--light-gray);">
+                <p style="color: var(--charcoal); margin-bottom: 15px;">Don't have an account?</p>
+                <button type="button" class="submit-button" style="background: transparent; color: var(--navy); border: 2px solid var(--navy);" onclick="switchToSignup()">
+                    Create Account
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Signup Modal -->
+    <div id="signup-modal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3>Create Account</h3>
+                <button class="close-modal">&times;</button>
+            </div>
+            <form id="signup-form">
+                <div class="form-group">
+                    <input type="text" id="signup-name" placeholder="Full Name" required>
+                </div>
+                <div class="form-group">
+                    <input type="email" id="signup-email" placeholder="Email Address" required>
+                </div>
+                <div class="form-group">
+                    <input type="password" id="signup-password" placeholder="Password" required minlength="6">
+                </div>
+                <div class="form-group">
+                    <input type="password" id="signup-confirm-password" placeholder="Confirm Password" required>
+                </div>
+                <button type="submit" class="submit-button" style="width: 100%;">
+                    <i class="fas fa-user-plus"></i> Create Account
+                </button>
+            </form>
+            <div style="text-align: center; margin-top: 20px; padding-top: 20px; border-top: 1px solid var(--light-gray);">
+                <p style="color: var(--charcoal); margin-bottom: 15px;">Already have an account?</p>
+                <button type="button" class="submit-button" style="background: transparent; color: var(--navy); border: 2px solid var(--navy);" onclick="switchToLogin()">
+                    Sign In
+                </button>
+            </div>
+        </div>
+    </div>
+
+</body>
+</html>
