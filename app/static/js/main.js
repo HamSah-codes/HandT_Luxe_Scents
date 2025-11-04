@@ -202,6 +202,14 @@ function setupEnhancedSearch() {
     }
 }
 
+// Shop Now button handler
+function handleShopNowClick() {
+    // If user is on index page, redirect to shop page
+    if (window.location.pathname.includes('index.html') || window.location.pathname === '/') {
+        window.location.href = 'shop.html';
+    }
+}
+
 // ==================== FEATURED PRODUCTS ====================
 
 // Featured Products Data 
@@ -791,7 +799,15 @@ document.addEventListener('DOMContentLoaded', function() {
     initChristmasBanner();
 });
 
+// ==================== SHOP NOW FUNCTIONALITY ====================
 
+// Shop Now button handler
+function handleShopNowClick() {
+    // If user is on index page, redirect to shop page
+    if (window.location.pathname.includes('index.html') || window.location.pathname === '/') {
+        window.location.href = 'shop.html';
+    }
+}
 
 // ==================== INITIALIZATION ====================
 
@@ -814,12 +830,12 @@ document.addEventListener('DOMContentLoaded', async function() {
     // Update auth UI on page load
     //updateAuthUI();
 
+    // Add shop now button listeners
+    document.querySelectorAll('.btn-primary, .shop-now-btn').forEach(button => {
+        if (button.textContent.includes('Shop Now') || button.classList.contains('shop-now-btn')) {
+            button.addEventListener('click', handleShopNowClick);
+        }
+    });
+
     console.log('Initialization complete');
-    
 });
-
-    
-          
-
-
-
