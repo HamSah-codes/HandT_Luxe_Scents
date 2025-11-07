@@ -12,84 +12,454 @@ let userReviews = [];
 
 // All Products Data
 const allProducts = [
-    {
-        id: 1,
-        name: "Midnight Oud",
-        brand: "H&T Luxe",
-        price: 89.99,
-        image: "https://images.unsplash.com/photo-1590736969953-7ce4d1c63f55?ixlib=rb-4.0.3&auto=format&fit=crop&w=500&q=80",
-        category: "men",
-        scent: "woody",
-        brandType: "ht-luxe",
-        mood: "confident",
-        season: "winter",
-        description: "A rich and intense fragrance with oud wood notes"
-    },
-    {
-        id: 2,
-        name: "Velvet Rose",
-        brand: "H&T Luxe",
-        price: 79.99,
-        image: "https://images.unsplash.com/photo-1590737400275-54a5c7f4ecc8?ixlib=rb-4.0.3&auto=format&fit=crop&w=500&q=80",
-        category: "women",
-        scent: "floral",
-        brandType: "ht-luxe",
-        mood: "romantic",
-        season: "spring",
-        description: "Elegant floral scent with rose and jasmine notes"
-    },
-    {
-        id: 3,
-        name: "Ocean Breeze",
-        brand: "H&T Luxe",
-        price: 69.99,
-        image: "https://images.unsplash.com/photo-1544468266-6a8948001c78?ixlib=rb-4.0.3&auto=format&fit=crop&w=500&q=80",
-        category: "unisex",
-        scent: "citrus",
-        brandType: "ht-luxe",
-        mood: "energetic",
-        season: "summer",
-        description: "Fresh and invigorating citrus aquatic fragrance"
-    },
-    {
-        id: 4,
-        name: "Sandalwood Essence",
-        brand: "H&T Luxe",
-        price: 94.99,
-        image: "https://images.unsplash.com/photo-1615634260167-6a76c217f7e3?ixlib=rb-4.0.3&auto=format&fit=crop&w=500&q=80",
-        category: "men",
-        scent: "woody",
-        brandType: "ht-luxe",
-        mood: "calm",
-        season: "autumn",
-        description: "Warm and comforting sandalwood fragrance"
-    },
-    {
-        id: 5,
-        name: "Citrus Bloom",
-        brand: "Premium",
-        price: 74.99,
-        image: "https://images.unsplash.com/photo-1592945403244-b3fbafd7f539?ixlib=rb-4.0.3&auto=format&fit=crop&w=500&q=80",
-        category: "unisex",
-        scent: "citrus",
-        brandType: "premium",
-        mood: "energetic",
-        season: "summer",
-        description: "Bright citrus notes with floral undertones"
-    },
-    {
-        id: 6,
-        name: "Oriental Nights",
-        brand: "Exclusive",
-        price: 99.99,
-        image: "https://images.unsplash.com/photo-1546453573-2cffef054b7a?ixlib=rb-4.0.3&auto=format&fit=crop&w=500&q=80",
-        category: "women",
-        scent: "oriental",
-        brandType: "exclusive",
-        mood: "romantic",
-        season: "winter",
-        description: "Exotic oriental fragrance with spice notes"
-    }
+        {
+            id: 1,
+            name: "Oud Nior",
+            brand: "Khadlaj",
+            price: 240.00,
+            originalPrice: 300.00,
+            image: "/static/assets/img/OUD_NIOR.jpeg",
+            category: "unisex",
+            scent: "woody",
+            brandType: "Khadlaj",
+            mood: "confident",
+            season: "winter",
+            description: "A rich and intense fragrance with oud wood notes",
+            isNew: false,
+            isBestSeller: true
+        },
+        {
+            id: 2,
+            name: "Black Leather",
+            brand: "Fragrance World",
+            price: 140.00,
+            originalPrice: 155.00,
+            image: "/static/assets/img/Black_Leather.jpeg",
+            category: "men",
+            scent: "floral",
+            brandType: "Fragrance World",
+            mood: "romantic",
+            season: "spring",
+            description: "Elegant floral scent with rose and jasmine notes",
+            isNew: false,
+            isBestSeller: true
+        },
+        {
+            id: 3,
+            name: "Matelot",
+            brand: "Fragrance World",
+            price: 150.00,
+            originalPrice: 160.00,
+            image: "/static/assets/img/Matelot.jpeg",
+            category: "men",
+            scent: "citrus",
+            brandType: "Fragrance World",
+            mood: "energetic",
+            season: "summer",
+            description: "Fresh and invigorating citrus aquatic fragrance",
+            isNew: false,
+            isBestSeller: true
+        },
+        {
+            id: 4,
+            name: "Suave Intense",
+            brand: "Fragrance World",
+            price: 149.00,
+            originalPrice: 155.00,
+            image: "/static/assets/img/Suave_Intense.jpeg",
+            category: "unisex",
+            scent: "woody",
+            brandType: "ht-luxe",
+            mood: "calm",
+            season: "autumn",
+            description: "Warm and comforting sandalwood fragrance",
+            isNew: false,
+            isBestSeller: false
+        },
+        {
+            id: 5,
+            name: "Mr. England Touch",
+            brand: "Premium",
+            price: 140.00,
+            originalPrice: 155.00,
+            image: "/static/assets/img/Mr_England.jpeg",
+            category: "men",
+            scent: "citrus",
+            brandType: "premium",
+            mood: "energetic",
+            season: "summer",
+            description: "Bright citrus notes with floral undertones",
+            isNew: false,
+            isBestSeller: false
+        },
+        {
+            id: 6,
+            name: "Instant Love",
+            brand: "Montera",
+            price: 140.00,
+            originalPrice: 155.00,
+            image: "/static/assets/img/Instant_Love.jpeg",
+            category: "unisex",
+            scent: "oriental",
+            brandType: "exclusive",
+            mood: "romantic",
+            season: "winter",
+            description: "Exotic oriental fragrance with spice notes",
+            isNew: false,
+            isBestSeller: false
+        },
+        {
+            id: 7,
+            name: "Explore The One",
+            brand: "H&T Luxe",
+            price: 155.00,
+            originalPrice: 170.00,
+            image: "/static/assets/img/Explore_The_One.jpeg",
+            category: "unisex",
+            scent: "fresh",
+            brandType: "ht-luxe",
+            mood: "calm",
+            season: "spring",
+            description: "Clean and crisp fresh linen scent",
+            isNew: false,
+            isBestSeller: false
+        },
+        {
+            id: 8,
+            name: "Night Club",
+            brand: "Fragrance World",
+            price: 185.00,
+            originalPrice: 200.00,
+            image: "/static/assets/img/Night_Club.jpeg",
+            category: "men",
+            scent: "spicy",
+            brandType: "Fragrance World",
+            mood: "confident",
+            season: "autumn",
+            description: "Warm spicy notes with exotic undertones",
+            isNew: false,
+            isBestSeller: true
+        },
+        {
+            id: 9,
+            name: "Tobacco Rouge",
+            brand: "Pendora Scents",
+            price: 140.00,
+            originalPrice: 155.00,
+            image: "/static/assets/img/Tobacco_Rouge.jpeg",
+            category: "men",
+            scent: "spicy",
+            brandType: "premium",
+            mood: "confident",
+            season: "autumn",
+            description: "Warm spicy notes with exotic undertones",
+            isNew: true,
+            isBestSeller: false
+        },
+        {
+            id: 10,
+            name: "Ameer Al-Oudh",
+            brand: "Lattafa",
+            price: 220.00,
+            originalPrice: 250.00,
+            image: "/static/assets/img/Ameer_Al-Oudh.jpeg",
+            category: "men",
+            scent: "spicy",
+            brandType: "Lattafa",
+            mood: "confident",
+            season: "autumn",
+            description: "Warm spicy notes with exotic undertones",
+            isNew: false,
+            isBestSeller: true
+        },
+        {
+            id: 11,
+            name: "Exchange",
+            brand: "Premium",
+            price: 140.00,
+            originalPrice: 155.00,
+            image: "/static/assets/img/Exchange.jpeg",
+            category: "unisex",
+            scent: "spicy",
+            brandType: "premium",
+            mood: "confident",
+            season: "autumn",
+            description: "Warm spicy notes with exotic undertones",
+            isNew: false,
+            isBestSeller: true
+        },
+        {
+            id: 12,
+            name: "Ramz Lattafa(Gold)",
+            brand: "Lattafa",
+            price: 200.00,
+            originalPrice: 250.00,
+            image: "/static/assets/img/Ramz_Lattafa(Gold).jpeg",
+            category: "unisex",
+            scent: "spicy",
+            brandType: "Lattafa",
+            mood: "confident",
+            season: "autumn",
+            description: "Warm spicy notes with exotic undertones",
+            isNew: false,
+            isBestSeller: true
+        },
+        {
+            id: 13,
+            name: "Ramz Lattafa(Silver)",
+            brand: "Lattafa",
+            price: 2000.00,
+            originalPrice: 250.00,
+            image: "/static/assets/img/Ramz_Lattafa(Silver).jpeg",
+            category: "men",
+            scent: "spicy",
+            brandType: "Lattafa",
+            mood: "confident",
+            season: "autumn",
+            description: "Warm spicy notes with exotic undertones",
+            isNew: false,
+            isBestSeller: true
+        },
+        {
+            id: 14,
+            name: "Barakkat satin oud",
+            brand: "Premium",
+            price: 140.00,
+            originalPrice: 155.00,
+            image: "/static/assets/img/Barakkat_Satin_Oud.jpeg",
+            category: "men",
+            scent: "spicy",
+            brandType: "premium",
+            mood: "confident",
+            season: "autumn",
+            description: "Warm spicy notes with exotic undertones",
+            isNew: false,
+            isBestSeller: false
+        },
+        {
+            id: 15,
+            name: "Brown Orchid(Blanc)",
+            brand: "Fragrance World",
+            price: 140.00,
+            originalPrice: 155.00,
+            image: "/static/assets/img/Brown_Orchid(Blanc).jpeg",
+            category: "men",
+            scent: "spicy",
+            brandType: "Fragrance World",
+            mood: "confident",
+            season: "autumn",
+            description: "Warm spicy notes with exotic undertones",
+            isNew: false,
+            isBestSeller: true
+        },
+        {
+            id: 16,
+            name: "Lomani Code",
+            brand: "Premium",
+            price: 140.00,
+            originalPrice: 155.00,
+            image: "/static/assets/img/Lomani_Code.jpeg",
+            category: "men",
+            scent: "spicy",
+            brandType: "premium",
+            mood: "confident",
+            season: "autumn",
+            description: "Warm spicy notes with exotic undertones",
+            isNew: true,
+            isBestSeller: false
+        },
+        {
+            id: 17,
+            name: "Barakkat Rouge 549",
+            brand: "Premium",
+            price: 140.00,
+            originalPrice: 155.00,
+            image: "/static/assets/img/Barakkat_Rouge.jpeg",
+            category: "unisex",
+            scent: "spicy",
+            brandType: "premium",
+            mood: "confident",
+            season: "autumn",
+            description: "Warm spicy notes with exotic undertones",
+            isNew: false,
+            isBestSeller: true
+        },
+        {
+            id: 18,
+            name: "After !2",
+            brand: "Efolia",
+            price: 160.00,
+            originalPrice: 180.00,
+            image: "/static/assets/img/After_12.jpeg",
+            category: "men",
+            scent: "spicy",
+            brandType: "Efolia",
+            mood: "confident",
+            season: "autumn",
+            description: "Warm spicy notes with exotic undertones",
+            isNew: false,
+            isBestSeller: false
+        },
+        {
+            id: 19,
+            name: "Carbon Black",
+            brand: "Fragrace World",
+            price: 140.00,
+            originalPrice: 155.00,
+            image: "/static/assets/img/Carbon_Black.jpeg",
+            category: "men",
+            scent: "spicy",
+            brandType: "Fragrance World",
+            mood: "confident",
+            season: "autumn",
+            description: "Warm spicy notes with exotic undertones",
+            isNew: false,
+            isBestSeller: true
+        },
+        {
+            id: 20,
+            name: "Proud Of You(Amber)",
+            brand: "Fragrance World",
+            price: 140.00,
+            originalPrice: 155.00,
+            image: "/static/assets/img/Proud_Of_You.jpeg",
+            category: "women",
+            scent: "spicy",
+            brandType: "Fragrance World",
+            mood: "confident",
+            season: "autumn",
+            description: "Warm spicy notes with exotic undertones",
+            isNew: false,
+            isBestSeller: false
+        },
+        {
+            id: 21,
+            name: "Lail Malaki",
+            brand: "Lattafa",
+            price: 190.00,
+            originalPrice: 220.00,
+            image: "/static/assets/img/Lail_Malaki.jpeg",
+            category: "women",
+            scent: "spicy",
+            brandType: "Lattafa",
+            mood: "confident",
+            season: "autumn",
+            description: "Warm spicy notes with exotic undertones",
+            isNew: false,
+            isBestSeller: false
+        },
+        {
+            id: 22,
+            name: "Emperor",
+            brand: "Premium",
+            price: 160.00,
+            originalPrice: 180.00,
+            image: "/static/assets/img/Emperor.jpeg",
+            category: "men",
+            scent: "spicy",
+            brandType: "premium",
+            mood: "confident",
+            season: "autumn",
+            description: "Warm spicy notes with exotic undertones",
+            isNew: false,
+            isBestSeller: false
+        },
+        {
+            id: 23,
+            name: "Oniro",
+            brand: "Fragrance World",
+            price: 140.00,
+            originalPrice: 155.00,
+            image: "/static/assets/img/Oniro.jpeg",
+            category: "men",
+            scent: "spicy",
+            brandType: "Lattafa",
+            mood: "confident",
+            season: "autumn",
+            description: "Warm spicy notes with exotic undertones",
+            isNew: false,
+            isBestSeller: true
+        },
+        {
+            id: 24,
+            name: "Queen Of Red",
+            brand: "Fragrance World",
+            price: 140.00,
+            originalPrice: 155.00,
+            image: "/static/assets/img/Queen_Of_Red.webp",
+            category: "women",
+            scent: "spicy",
+            brandType: "Fragrance World",
+            mood: "confident",
+            season: "autumn",
+            description: "Warm spicy notes with exotic undertones",
+            isNew: false,
+            isBestSeller: true
+        },
+        {
+            id: 25,
+            name: "Ely Sia",
+            brand: "Fragrance World",
+            price: 140.00,
+            originalPrice: 155.00,
+            image: "/static/assets/img/Ely_Sia.jpeg",
+            category: "women",
+            scent: "spicy",
+            brandType: "Fragrance World",
+            mood: "confident",
+            season: "autumn",
+            description: "Warm spicy notes with exotic undertones",
+            isNew: false,
+            isBestSeller: false
+        },
+        {
+            id: 26,
+            name: "Intensio",
+            brand: "L'Affair",
+            price: 175.00,
+            originalPrice: 210.00,
+            image: "/static/assets/img/Intensio.jpeg",
+            category: "men",
+            scent: "spicy",
+            brandType: "L'Affair",
+            mood: "confident",
+            season: "autumn",
+            description: "Warm spicy notes with exotic undertones",
+            isNew: true,
+            isBestSeller: false
+        },
+        {
+            id: 27,
+            name: "Hayaati Rose",
+            brand: "Fragrance World",
+            price: 160.00,
+            originalPrice: 180.00,
+            image: "/static/assets/img/Hayaati_Rose.jpeg",
+            category: "women",
+            scent: "spicy",
+            brandType: "Fragrance World",
+            mood: "confident",
+            season: "autumn",
+            description: "Warm spicy notes with exotic undertones",
+            isNew: true,
+            isBestSeller: false
+        },
+        {
+            id: 28,
+            name: "Malaki Secret",
+            brand: "Sahari",
+            price: 160.00,
+            originalPrice: 180.00,
+            image: "/static/assets/img/Malaki_Secret.jpeg",
+            category: "women",
+            scent: "spicy",
+            brandType: "Sahari",
+            mood: "confident",
+            season: "autumn",
+            description: "Warm spicy notes with exotic undertones",
+            isNew: true,
+            isBestSeller: false
+        }
 ];
 
 
@@ -971,18 +1341,18 @@ function setupCheckout() {
 function setupSearch() {
     const searchInput = document.querySelector('.search-input');
     const searchBtn = document.querySelector('.search-btn');
-    
+    let suggestionsContainer = null;
+
     if (searchInput && searchBtn) {
+        // Create suggestions container
+        suggestionsContainer = document.createElement('div');
+        suggestionsContainer.className = 'search-suggestions';
+        searchInput.parentNode.appendChild(suggestionsContainer);
+
         const performSearch = () => {
             const searchTerm = searchInput.value.toLowerCase().trim();
             if (searchTerm) {
-                const filteredProducts = allProducts.filter(product => 
-                    product.name.toLowerCase().includes(searchTerm) ||
-                    product.brand.toLowerCase().includes(searchTerm) ||
-                    product.category.toLowerCase().includes(searchTerm) ||
-                    product.scent.toLowerCase().includes(searchTerm) ||
-                    product.description.toLowerCase().includes(searchTerm)
-                );
+                const filteredProducts = searchProducts(searchTerm, allProducts);
 
                 if (filteredProducts.length === 0) {
                     showAlert('No products found matching your search', 'info');
@@ -990,11 +1360,23 @@ function setupSearch() {
                     displayAllProducts(filteredProducts);
                     showAlert(`Found ${filteredProducts.length} product(s)`, 'success');
                 }
+                
+                hideSuggestions();
             } else {
                 displayAllProducts(allProducts);
             }
         };
-        
+
+        // Real-time search suggestions
+        searchInput.addEventListener('input', (e) => {
+            const searchTerm = e.target.value.trim().toLowerCase();
+            if (searchTerm.length > 0) {
+                showSuggestions(searchTerm);
+            } else {
+                hideSuggestions();
+            }
+        });
+
         searchBtn.addEventListener('click', performSearch);
         searchInput.addEventListener('keypress', (e) => {
             if (e.key === 'Enter') {
@@ -1006,8 +1388,78 @@ function setupSearch() {
         searchInput.addEventListener('input', (e) => {
             if (e.target.value === '') {
                 displayAllProducts(allProducts);
+                hideSuggestions();
             }
         });
+
+        // Hide suggestions when clicking outside
+        document.addEventListener('click', (e) => {
+            if (!searchInput.contains(e.target) && (!suggestionsContainer || !suggestionsContainer.contains(e.target))) {
+                hideSuggestions();
+            }
+        });
+    }
+}
+
+// Search products function
+function searchProducts(searchTerm, products) {
+    return products.filter(product => 
+        product.name.toLowerCase().includes(searchTerm) ||
+        product.brand.toLowerCase().includes(searchTerm) ||
+        product.category.toLowerCase().includes(searchTerm) ||
+        product.scent.toLowerCase().includes(searchTerm) ||
+        product.description.toLowerCase().includes(searchTerm)
+    );
+}
+
+// Show search suggestions
+function showSuggestions(searchTerm) {
+    const suggestionsContainer = document.querySelector('.search-suggestions');
+    if (!suggestionsContainer) return;
+
+    const suggestions = searchProducts(searchTerm, allProducts).slice(0, 5);
+
+    if (suggestions.length > 0) {
+        suggestionsContainer.innerHTML = suggestions.map(product => `
+            <div class="suggestion-item" data-product-id="${product.id}">
+                <img src="${product.image}" alt="${product.name}" class="suggestion-image">
+                <div class="suggestion-info">
+                    <div class="suggestion-name">${product.name}</div>
+                    <div class="suggestion-brand">${product.brand}</div>
+                    <div class="suggestion-price">$${product.price}</div>
+                </div>
+            </div>
+        `).join('');
+
+        suggestionsContainer.style.display = 'block';
+
+        // Add click event to suggestions
+        suggestionsContainer.querySelectorAll('.suggestion-item').forEach(item => {
+            item.addEventListener('click', () => {
+                const productId = item.getAttribute('data-product-id');
+                const searchInput = document.querySelector('.search-input');
+                const product = allProducts.find(p => p.id == productId);
+                
+                if (product) {
+                    searchInput.value = product.name;
+                    hideSuggestions();
+                    // Perform search with the selected product name
+                    const filteredProducts = searchProducts(product.name.toLowerCase(), allProducts);
+                    displayAllProducts(filteredProducts);
+                    showAlert(`Found ${filteredProducts.length} product(s) for "${product.name}"`, 'success');
+                }
+            });
+        });
+    } else {
+        hideSuggestions();
+    }
+}
+
+// Hide search suggestions
+function hideSuggestions() {
+    const suggestionsContainer = document.querySelector('.search-suggestions');
+    if (suggestionsContainer) {
+        suggestionsContainer.style.display = 'none';
     }
 }
 

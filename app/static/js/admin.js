@@ -40,14 +40,14 @@ let messages = [
         name: "John Doe", 
         email: "john@example.com", 
         message: "I love your products! When will you have new arrivals?", 
-        date: "2023-10-15" 
+        date: "2025-10-15" 
     },
     { 
         id: 2, 
         name: "Jane Smith", 
         email: "jane@example.com", 
         message: "Do you ship internationally?", 
-        date: "2023-10-14" 
+        date: "2025-10-14" 
     }
 ];
 
@@ -58,16 +58,16 @@ let reviews = [
         user: "Mike Johnson", 
         rating: 5, 
         review: "Amazing fragrance! Lasts all day.", 
-        date: "2023-10-13" 
+        date: "2025-10-13" 
     }
 ];
 
 let wishlists = [
-    { user: "Sarah Wilson", product: "Velvet Rose", addedDate: "2023-10-12" }
+    { user: "Sarah Wilson", product: "Velvet Rose", addedDate: "2025-10-12" }
 ];
 
 let discounts = [
-    { code: "WELCOME10", percentage: 10, startDate: "2023-10-01", endDate: "2023-12-31", status: "Active" }
+    { code: "WELCOME10", percentage: 10, startDate: "2025-10-01", endDate: "2025-12-31", status: "Active" }
 ];
 
 
@@ -242,7 +242,7 @@ function displayProducts() {
                 <td><img src="${product.image}" alt="${product.name}" class="table-image"></td>
                 <td>${product.name}</td>
                 <td>${product.brand}</td>
-                <td>$${product.price}</td>
+                <td>GH₵${product.price}</td>
                 <td>${product.category}</td>
                 <td>
                     <button class="action-btn edit-btn" data-id="${product.id}">Edit</button>
