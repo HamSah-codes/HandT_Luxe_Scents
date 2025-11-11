@@ -262,7 +262,7 @@ class UserDashboard {
             <div class="empty-state">
                 <i class="fas fa-shopping-bag"></i>
                 <p>No recent orders</p>
-                <a href="index.html#shop" class="btn btn-primary">Start Shopping</a>
+                <a href="shop.html" class="btn btn-primary">Start Shopping</a>
             </div>
         `;
     }
@@ -417,7 +417,7 @@ class UserDashboard {
             <div class="empty-state">
                 <i class="fas fa-heart"></i>
                 <p>Your wishlist is empty</p>
-                <a href="index.html#shop" class="btn btn-primary">Explore Products</a>
+                <a href="shop.html" class="btn btn-primary">Explore Products</a>
             </div>
         `;
     }

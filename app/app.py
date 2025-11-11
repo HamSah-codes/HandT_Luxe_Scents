@@ -333,6 +333,12 @@ def user_interface():
 def admin_interface():
     return render_template('admin-interface.html')
 
+@app.route('/shop.html')
+def shop_page():
+    return render_template('shop.html')
+
+
+
 # API Routes for Products
 @app.route('/api/products')
 def get_products():

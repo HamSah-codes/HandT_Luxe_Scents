@@ -3,12 +3,14 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>H&T Luxe Scents | Premium Fragrances</title>
+    <title>Shop Fragrances | H&T Luxe Scents</title>
     <link rel="stylesheet" href="static/css/style.css">
+    <link rel="stylesheet" href="static/css/shop.css">
     <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;500;600&family=Montserrat:wght@300;400;500&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
 </head>
 <body>
+
     <!-- Christmas Sticky Banner -->
     <div class="sticky-banner">
         <div class="banner-container">
@@ -36,10 +38,9 @@
                     <span class="phone-number">0591373371</span>
                 </div>
             </div>
-        
         </div>
     </div>
-        
+
     <!-- Navigation -->
     <nav class="navbar">
         <div class="nav-container">
@@ -60,9 +61,9 @@
                 <!-- Navigation Menu -->
                 <div class="nav-menu">
                     <a href="index.html" class="nav-link">Home</a>
-                    <a href="shop.html" class="nav-link">Shop</a>
-                    <a href="#about" class="nav-link">About</a>
-                    <a href="#contact" class="nav-link">Contact</a>
+                    <a href="shop.html" class="nav-link active">Shop</a>
+                    <a href="index.html#about" class="nav-link">About</a>
+                    <a href="index.html#contact" class="nav-link">Contact</a>
                 </div>
 
                 <!-- Right Side Actions -->
@@ -90,13 +91,13 @@
                         </div>
 
                         <!-- Wishlist -->
-                        <a href="#wishlist" class="icon-link" title="Wishlist">
+                        <a href="user-interface.html#wishlist" class="icon-link" title="Wishlist">
                             <i class="fas fa-heart"></i>
                             <span class="icon-badge" id="wishlist-count">0</span>
                         </a>
 
                         <!-- Cart -->
-                        <a href="#cart" class="icon-link" title="Shopping Cart">
+                        <a href="user-interface.html#cart" class="icon-link" title="Shopping Cart">
                             <i class="fas fa-shopping-bag"></i>
                             <span class="icon-badge" id="cart-count">0</span>
                         </a>
@@ -121,15 +122,15 @@
                 <div class="mobile-menu-section">
                     <h4>Shop By Category</h4>
                     <div class="mobile-menu-links">
-                        <a href="#him" class="mobile-menu-link">
+                        <a href="#him" class="mobile-menu-link" data-filter="men">
                             <i class="fas fa-mars"></i>
                             For Him
                         </a>
-                        <a href="#her" class="mobile-menu-link">
+                        <a href="#her" class="mobile-menu-link" data-filter="women">
                             <i class="fas fa-venus"></i>
                             For Her
                         </a>
-                        <a href="#unisex" class="mobile-menu-link">
+                        <a href="#unisex" class="mobile-menu-link" data-filter="unisex">
                             <i class="fas fa-venus-mars"></i>
                             Unisex
                         </a>
@@ -167,121 +168,146 @@
                     <div class="mobile-menu-links">
                         <a href="index.html" class="mobile-menu-link">Home</a>
                         <a href="shop.html" class="mobile-menu-link">Shop</a>
-                        <a href="#about" class="mobile-menu-link">About</a>
-                        <a href="#contact" class="mobile-menu-link">Contact</a>
+                        <a href="index.html#about" class="mobile-menu-link">About</a>
+                        <a href="index.html#contact" class="mobile-menu-link">Contact</a>
                     </div>
                 </div>
             </div>
         </div>
     </div>
+
+    <!-- Shop Header -->
+    <section class="shop-header">
+        <div class="container">
+            <div class="shop-header-content">
+                <h1 class="shop-title">Premium Fragrances</h1>
+                <p class="shop-subtitle">Discover our exquisite collection of luxury scents</p>
+            </div>
+        </div>
+    </section>
+
+    <!-- Shop Content -->
+    <section class="shop-content">
+        <div class="container">
+            <div class="shop-layout">
+                <!-- Filters Sidebar -->
+                <aside class="filters-sidebar">
+                    <div class="filter-section">
+                        <h3>Filter By</h3>
                         
-                    
-    <!-- Hero Section -->
-    <section id="home" class="hero">
-        <div class="hero-content">
-            <h1 class="hero-title">Elegance in Every Scent</h1>
-            <p class="hero-subtitle">Discover our exclusive collection of premium fragrances crafted for the discerning individual.</p>
-            <a href="shop.html" class="cta-button">Shop Now</a>
-        </div>
-        <div class="hero-image">
-            <img src="/static/assets/img/HERO.jpg" alt="H&T Luxe Scents Hero Image" style="width: 100%; height: 100%;">
-        </div>
-    </section>
-
-    <!-- Featured Products -->
-    <section id="shop" class="featured-products">
-        <div class="container">
-            <h2 class="section-title">Featured Fragrances</h2>
-            <div class="products-grid" id="featured-products">
-                <!-- Products will be loaded via JavaScript -->
-            </div>
-        </div>
-    </section>
-
-    <!-- Collections -->
-    <section id="collections" class="collections">
-        <div class="container">
-            <h2 class="section-title">Our Collections</h2>
-            <div class="collections-grid">
-                <div class="collection-card">
-                    <div class="collection-image">
-                        <img src="../static/assets/img/MEN_COLLECTIONS.webp" alt="Men's Collection">
-                    </div>
-                    <div class="collection-info">
-                        <h3>For Him</h3>
-                        <p>Bold, sophisticated scents for the modern gentleman</p>
-                        <a href="shop.html" class="collection-link">Explore</a>
-                    </div>
-                </div>
-                <div class="collection-card">
-                    <div class="collection-image">
-                        <img src="../static/assets/img/WOMEN_COLLECTIONS.webp" alt="Women's Collection">
-                    </div>
-                    <div class="collection-info">
-                        <h3>For Her</h3>
-                        <p>Elegant, captivating fragrances for the contemporary woman</p>
-                        <a href="shop.html" class="collection-link">Explore</a>
-                    </div>
-                </div>
-                <div class="collection-card">
-                    <div class="collection-image">
-                        <img src="../static/assets/img/UNISEX_COLLECTIONS.webp" alt="Unisex Collection">
-                    </div>
-                    <div class="collection-info">
-                        <h3>Unisex</h3>
-                        <p>Versatile scents that transcend gender boundaries</p>
-                        <a href="shop.html" class="collection-link">Explore</a>
-                    </div>
-                </div>
-            </div>
-        </div>
-    </section>
-
-    <!-- About Section -->
-    <section id="about" class="about">
-        <div class="container">
-            <div class="about-content">
-                <div class="about-text">
-                    <h2 class="section-title">About H&T Luxe Scents</h2>
-                    <p>Founded with a passion for exquisite fragrances, H&T Luxe Scents brings you carefully curated scents from around the world. Our mission is to help you find the perfect fragrance that complements your personality and style.</p>
-                    <p>Each scent in our collection is meticulously selected for its quality, uniqueness, and ability to evoke emotions and memories.</p>
-                </div>
-                <div class="about-image">
-                    <img src="../static/assets/img/ABOUT_US.jpg" alt="About H&T Luxe Scents">
-                </div>
-            </div>
-        </div>
-    </section>
-
-    <!-- Contact Section -->
-    <section id="contact" class="contact">
-        <div class="container">
-            <h2 class="section-title">Get In Touch</h2>
-            <div class="contact-content">
-                <div class="contact-info">
-                    <h3>Contact Information</h3>
-                    <p><i class="fas fa-phone"></i> +233 591 373 371</p>
-                    <p><i class="fas fa-envelope"></i> info@htluxescents.com</p>
-                    <p><i class="fas fa-map-marker-alt"></i> Accra, Ghana</p>
-                    <a href="https://wa.me/233591373371" class="whatsapp-button" target="_blank">
-                        <i class="fab fa-whatsapp"></i> Message us on WhatsApp
-                    </a>
-                </div>
-                <div class="contact-form">
-                    <h3>Send us a Message</h3>
-                    <form id="message-form">
-                        <div class="form-group">
-                            <input type="text" id="name" name="name" placeholder="Your Name" required>
+                        <!-- Gender Filter -->
+                        <div class="filter-group">
+                            <h4>Gender</h4>
+                            <div class="filter-options">
+                                <button class="filter-btn active" data-filter="all">All Fragrances</button>
+                                <button class="filter-btn" data-filter="men">For Him</button>
+                                <button class="filter-btn" data-filter="women">For Her</button>
+                                <button class="filter-btn" data-filter="unisex">Unisex</button>
+                            </div>
                         </div>
-                        <div class="form-group">
-                            <input type="email" id="email" name="email" placeholder="Your Email" required>
+
+                        <!-- Scent Type Filter -->
+                        <div class="filter-group">
+                            <h4>Scent Type</h4>
+                            <div class="filter-options">
+                                <button class="filter-btn" data-scent="woody">Woody</button>
+                                <button class="filter-btn" data-scent="floral">Floral</button>
+                                <button class="filter-btn" data-scent="citrus">Citrus</button>
+                                <button class="filter-btn" data-scent="oriental">Oriental</button>
+                                <button class="filter-btn" data-scent="fresh">Fresh</button>
+                                <button class="filter-btn" data-scent="spicy">Spicy</button>
+                            </div>
                         </div>
-                        <div class="form-group">
-                            <textarea id="message" name="message" placeholder="Your Message" rows="5" required></textarea>
+
+                        <!-- Brand Filter -->
+                        <div class="filter-group">
+                            <h4>Brand</h4>
+                            <div class="filter-options">
+                                <button class="filter-btn" data-brand="Fragrance World">Fragrance World</button>
+                                <button class="filter-btn" data-brand="Lattafa">Lattafa</button>
+                                <button class="filter-btn" data-brand="L'Affair">L'Affair</button>
+                                <button class="filter-btn" data-brand="Efolia">Efolia</button>
+                            </div>
                         </div>
-                        <button type="submit" class="submit-button">Send Message</button>
-                    </form>
-                </div>
+
+                        <!-- Mood Filter -->
+                        <div class="filter-group">
+                            <h4>Mood</h4>
+                            <div class="filter-options">
+                                <button class="filter-btn" data-mood="romantic">Romantic</button>
+                                <button class="filter-btn" data-mood="energetic">Energetic</button>
+                                <button class="filter-btn" data-mood="calm">Calm</button>
+                                <button class="filter-btn" data-mood="confident">Confident</button>
+                                <button class="filter-btn" data-mood="sophisticated">Sophisticated</button>
+                            </div>
+                        </div>
+
+                        <!-- Season Filter -->
+                        <div class="filter-group">
+                            <h4>Season</h4>
+                            <div class="filter-options">
+                                <button class="filter-btn" data-season="spring">Spring</button>
+                                <button class="filter-btn" data-season="summer">Summer</button>
+                                <button class="filter-btn" data-season="autumn">Autumn</button>
+                                <button class="filter-btn" data-season="winter">Winter</button>
+                            </div>
+                        </div>
+
+                        <!-- Price Range -->
+                        <div class="filter-group">
+                            <h4>Price Range</h4>
+                            <div class="price-range">
+                                <input type="range" id="price-range" min="0" max="1000" value="1000" class="slider">
+                                <div class="price-labels">
+                                    <span>GH₵ 0</span>
+                                    <span id="price-max">GH₵ 1000</span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Clear Filters -->
+                        <button class="clear-filters-btn">
+                            <i class="fas fa-times"></i>
+                            Clear All Filters
+                        </button>
+                    </div>
+                </aside>
+
+                <!-- Products Grid -->
+                <main class="products-main">
+                    <div class="products-header">
+                        <div class="results-count">
+                            <span id="products-count">12</span> products found
+                        </div>
+                        <div class="sort-options">
+                            <select id="sort-by">
+                                <option value="featured">Featured</option>
+                                <option value="price-low">Price: Low to High</option>
+                                <option value="price-high">Price: High to Low</option>
+                                <option value="name">Name: A to Z</option>
+                                <option value="newest">Newest First</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <div class="products-grid" id="products-grid">
+                        <!-- Products will be loaded here by JavaScript -->
+                    </div>
+
+                    <!-- Loading State -->
+                    <div class="loading-state" id="loading-state">
+                        <i class="fas fa-spinner fa-spin"></i>
+                        <p>Loading fragrances...</p>
+                    </div>
+
+                    <!-- No Results State -->
+                    <div class="no-results" id="no-results" style="display: none;">
+                        <i class="fas fa-search"></i>
+                        <h3>No fragrances found</h3>
+                        <p>Try adjusting your filters or search terms</p>
+                        <button class="btn btn-primary" onclick="clearAllFilters()">Clear All Filters</button>
+                    </div>
+                </main>
             </div>
         </div>
     </section>
@@ -297,11 +323,11 @@
                 <div class="footer-section">
                     <h4>Quick Links</h4>
                     <ul>
-                        <li><a href="#home">Home</a></li>
+                        <li><a href="index.html">Home</a></li>
                         <li><a href="shop.html">Shop</a></li>
-                        <li><a href="#collections">Collections</a></li>
-                        <li><a href="#about">About</a></li>
-                        <li><a href="#contact">Contact</a></li>
+                        <li><a href="index.html#collections">Collections</a></li>
+                        <li><a href="index.html#about">About</a></li>
+                        <li><a href="index.html#contact">Contact</a></li>
                     </ul>
                 </div>
                 <div class="footer-section">
@@ -329,8 +355,6 @@
             </div>
         </div>
     </footer>
-
-    <script src="static/js/main.js"></script>
 
     <!-- Login Modal -->
     <div id="login-modal" class="modal">
@@ -392,5 +416,8 @@
         </div>
     </div>
 
+    <script src="static/js/main.js"></script>
+    <script src="static/js/user.js"></script>
+    <script src="static/js/shop.js"></script>
 </body>
 </html>

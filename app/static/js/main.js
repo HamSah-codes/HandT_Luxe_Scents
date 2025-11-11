@@ -176,29 +176,134 @@ function updateAccountDisplay() {
 function setupEnhancedSearch() {
     const searchInput = document.querySelector('.search-input');
     const searchBtn = document.querySelector('.search-btn');
+    let suggestionsContainer = null;
 
     if (searchInput && searchBtn) {
+        // Create suggestions container
+        suggestionsContainer = document.createElement('div');
+        suggestionsContainer.className = 'search-suggestions';
+        searchInput.parentNode.appendChild(suggestionsContainer);
+
         const performSearch = () => {
-            const searchTerm = searchInput.value.trim();
+            const searchTerm = searchInput.value.trim().toLowerCase();
             if (searchTerm) {
-                // Show search results (you can implement actual search logic here)
-                showAlert(`Searching for: "${searchTerm}"`, 'info');
+                // Search in featured products
+                const searchResults = searchProducts(searchTerm, featuredProducts);
                 
-                // For now, just log the search term
-                console.log('Search term:', searchTerm);
+                if (searchResults.length > 0) {
+                    showAlert(`Found ${searchResults.length} product(s) for: "${searchTerm}"`, 'success');
+                    // You can implement displaying search results here
+                    console.log('Search results:', searchResults);
+                } else {
+                    showAlert(`No products found for: "${searchTerm}"`, 'info');
+                }
                 
-                // Clear search input
+                // Clear search input and suggestions
                 searchInput.value = '';
+                hideSuggestions();
             }
         };
 
+        // Real-time search suggestions
+        searchInput.addEventListener('input', (e) => {
+            const searchTerm = e.target.value.trim().toLowerCase();
+            if (searchTerm.length > 0) {
+                showSuggestions(searchTerm);
+            } else {
+                hideSuggestions();
+            }
+        });
+
+        // Search button click
         searchBtn.addEventListener('click', performSearch);
         
+        // Enter key search
         searchInput.addEventListener('keypress', (e) => {
             if (e.key === 'Enter') {
                 performSearch();
             }
         });
+
+        // Hide suggestions when clicking outside
+        document.addEventListener('click', (e) => {
+            if (!searchInput.contains(e.target) && (!suggestionsContainer || !suggestionsContainer.contains(e.target))) {
+                hideSuggestions();
+            }
+        });
+    }
+}
+
+// Search products function
+function searchProducts(searchTerm, products) {
+    return products.filter(product => {
+        const productName = product.name.toLowerCase();
+        const productBrand = product.brand.toLowerCase();
+        const productCategory = product.category.toLowerCase();
+        const productScent = product.scent.toLowerCase();
+        
+        return productName.includes(searchTerm) ||
+               productBrand.includes(searchTerm) ||
+               productCategory.includes(searchTerm) ||
+               productScent.includes(searchTerm);
+    });
+}
+
+// Show search suggestions
+function showSuggestions(searchTerm) {
+    const suggestionsContainer = document.querySelector('.search-suggestions');
+    if (!suggestionsContainer) return;
+
+    // Search in both featured products and all products for comprehensive suggestions
+    const allProducts = [...featuredProducts, ...allProducts || []];
+    const suggestions = searchProducts(searchTerm, allProducts).slice(0, 5); // Limit to 5 suggestions
+
+    if (suggestions.length > 0) {
+        suggestionsContainer.innerHTML = suggestions.map(product => `
+            <div class="suggestion-item" data-product-id="${product.id}">
+                <img src="${product.image}" alt="${product.name}" class="suggestion-image">
+                <div class="suggestion-info">
+                    <div class="suggestion-name">${product.name}</div>
+                    <div class="suggestion-brand">${product.brand}</div>
+                    <div class="suggestion-price">GH₵${product.price}</div>
+                </div>
+            </div>
+        `).join('');
+
+        suggestionsContainer.style.display = 'block';
+
+        // Add click event to suggestions
+        suggestionsContainer.querySelectorAll('.suggestion-item').forEach(item => {
+            item.addEventListener('click', () => {
+                const productId = item.getAttribute('data-product-id');
+                const searchInput = document.querySelector('.search-input');
+                const product = allProducts.find(p => p.id == productId);
+                
+                if (product) {
+                    searchInput.value = product.name;
+                    hideSuggestions();
+                    // Optionally trigger search or redirect to product page
+                    showAlert(`Selected: ${product.name}`, 'info');
+                }
+            });
+        });
+    } else {
+        hideSuggestions();
+    }
+}
+
+// Hide search suggestions
+function hideSuggestions() {
+    const suggestionsContainer = document.querySelector('.search-suggestions');
+    if (suggestionsContainer) {
+        suggestionsContainer.style.display = 'none';
+    }
+}
+
+// Shop Now button handler
+function handleShopNowClick() {
+    // If user is on index page, redirect to shop page
+    if (window.location.pathname.includes('index.html') || window.location.pathname === '/') {
+        window.location.href = 'shop.html';
     }
 }
 
@@ -208,10 +313,10 @@ function setupEnhancedSearch() {
 const featuredProducts = [
     {
         id: 1,
-        name: "Midnight Oud",
-        brand: "H&T Luxe",
-        price: 89.99,
-        image: "https://images.unsplash.com/photo-1590736969953-7ce4d1c63f55?ixlib=rb-4.0.3&auto=format&fit=crop&w=500&q=80",
+        name: "Oud Nior",
+        brand: "Khadlaj",
+        price: 240.00,
+        image: "/static/assets/img/OUD_NIOR.jpeg",
         category: "men",
         scent: "woody",
         mood: "confident",
@@ -219,32 +324,32 @@ const featuredProducts = [
     },
     {
         id: 2,
-        name: "Velvet Rose",
-        brand: "H&T Luxe",
-        price: 79.99,
-        image: "https://images.unsplash.com/photo-1590737400275-54a5c7f4ecc8?ixlib=rb-4.0.3&auto=format&fit=crop&w=500&q=80",
-        category: "women",
+        name: "Matelot",
+        brand: "Fragrance World",
+        price: 150.00,
+        image: "/static/assets/img/MATELOT.jpeg",
+        category: "men",
         scent: "floral",
         mood: "romantic",
         season: "spring"
     },
     {
         id: 3,
-        name: "Ocean Breeze",
-        brand: "H&T Luxe",
-        price: 69.99,
-        image: "https://images.unsplash.com/photo-1544468266-6a8948001c78?ixlib=rb-4.0.3&auto=format&fit=crop&w=500&q=80",
-        category: "unisex",
+        name: "Malaki Secret",
+        brand: "Sahari",
+        price: 160.00,
+        image: "/static/assets/img/MALAKI_SECRET.jpeg",
+        category: "women",
         scent: "citrus",
         mood: "energetic",
         season: "summer"
     },
     {
         id: 4,
-        name: "Sandalwood Essence",
-        brand: "H&T Luxe",
-        price: 94.99,
-        image: "https://images.unsplash.com/photo-1615634260167-6a76c217f7e3?ixlib=rb-4.0.3&auto=format&fit=crop&w=500&q=80",
+        name: "Hayaati Rose",
+        brand: "Fragrance World",
+        price: 160.00,
+        image: "/static/assets/img/HAYAATI_ROSE.jpeg",
         category: "men",
         scent: "woody",
         mood: "calm",
@@ -268,7 +373,7 @@ function displayFeaturedProducts() {
                 <div class="product-info">
                     <h3 class="product-name">${product.name}</h3>
                     <p class="product-brand">${product.brand}</p>
-                    <p class="product-price">$${product.price}</p>
+                    <p class="product-price">GH₵${product.price}</p>
                     <div class="product-actions">
                         <button class="btn btn-primary add-to-cart" data-id="${product.id}">Add to Cart</button>
                         <button class="btn btn-secondary add-to-wishlist" data-id="${product.id}">
@@ -791,7 +896,15 @@ document.addEventListener('DOMContentLoaded', function() {
     initChristmasBanner();
 });
 
+// ==================== SHOP NOW FUNCTIONALITY ====================
 
+// Shop Now button handler
+function handleShopNowClick() {
+    // If user is on index page, redirect to shop page
+    if (window.location.pathname.includes('index.html') || window.location.pathname === '/') {
+        window.location.href = 'shop.html';
+    }
+}
 
 // ==================== INITIALIZATION ====================
 
@@ -814,12 +927,12 @@ document.addEventListener('DOMContentLoaded', async function() {
     // Update auth UI on page load
     //updateAuthUI();
 
+    // Add shop now button listeners
+    document.querySelectorAll('.btn-primary, .shop-now-btn').forEach(button => {
+        if (button.textContent.includes('Shop Now') || button.classList.contains('shop-now-btn')) {
+            button.addEventListener('click', handleShopNowClick);
+        }
+    });
+
     console.log('Initialization complete');
-    
 });
-
-    
-          
-
-
-
