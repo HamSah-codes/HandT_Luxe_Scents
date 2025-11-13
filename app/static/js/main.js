@@ -402,11 +402,30 @@ function addToCart(e) {
     const productId = e.target.getAttribute('data-id');
     const product = featuredProducts.find(p => p.id == productId);
     
-    
-    showAlert(`Added ${product.name} to cart!`, 'success');
-    
-    // Update cart count in UI (if implemented)
-    updateCartCount();
+    if (product) {
+        // Get current cart from localStorage
+        let cart = JSON.parse(localStorage.getItem('cart')) || [];
+        
+        // Check if product already in cart
+        const existingItem = cart.find(item => item.id === productId);
+        
+        if (existingItem) {
+            existingItem.quantity += 1;
+        } else {
+            cart.push({
+                ...product,
+                quantity: 1
+            });
+        }
+        
+        // Save back to localStorage
+        localStorage.setItem('cart', JSON.stringify(cart));
+        
+        // Update cart count
+        updateCartCount();
+        
+        showAlert(`Added ${product.name} to cart!`, 'success');
+    }
 }
 
 // Add to Wishlist Functionality
@@ -415,23 +434,54 @@ function addToWishlist(e) {
     const product = featuredProducts.find(p => p.id == productId);
     const heartIcon = e.target.closest('.add-to-wishlist').querySelector('i');
     
-    // Toggle heart icon
-    if (heartIcon.classList.contains('far')) {
+    // Get current wishlist from localStorage
+    let wishlist = JSON.parse(localStorage.getItem('wishlist')) || [];
+    
+    // Check if product already in wishlist
+    const existingItem = wishlist.find(item => item.id === productId);
+    
+    if (!existingItem) {
+        wishlist.push(product);
+        localStorage.setItem('wishlist', JSON.stringify(wishlist));
         heartIcon.classList.remove('far');
         heartIcon.classList.add('fas');
         showAlert(`Added ${product.name} to wishlist!`, 'success');
     } else {
+        wishlist = wishlist.filter(item => item.id !== productId);
+        localStorage.setItem('wishlist', JSON.stringify(wishlist));
         heartIcon.classList.remove('fas');
         heartIcon.classList.add('far');
         showAlert(`Removed ${product.name} from wishlist!`, 'info');
     }
     
+    updateWishlistCount();
 }
 
-// Update Cart Count (placeholder function)
+// Update Cart Count
 function updateCartCount() {
-    // This would update the cart count in the navigation
-    console.log('Cart updated');
+    const cart = JSON.parse(localStorage.getItem('cart')) || [];
+    const totalItems = cart.reduce((sum, item) => sum + item.quantity, 0);
+    
+    // Update all cart count elements
+    document.querySelectorAll('#cart-count').forEach(element => {
+        element.textContent = totalItems;
+    });
+}
+
+// Update Wishlist Count
+function updateWishlistCount() {
+    const wishlist = JSON.parse(localStorage.getItem('wishlist')) || [];
+    
+    // Update all wishlist count elements
+    document.querySelectorAll('#wishlist-count').forEach(element => {
+        element.textContent = wishlist.length;
+    });
+}
+
+// Initialize counts on page load
+function initializeCounts() {
+    updateCartCount();
+    updateWishlistCount();
 }
 
 // Contact Form Submission
@@ -684,6 +734,172 @@ function updateAuthUI() {
     updateAccountDisplay();
 }
 
+ // Add forgot password functionality
+function setupForgotPassword() {
+    const forgotPasswordLink = document.getElementById('forgot-password-link');
+    
+    if (forgotPasswordLink) {
+        forgotPasswordLink.addEventListener('click', (e) => {
+            e.preventDefault();
+            document.getElementById('login-modal').style.display = 'none';
+            document.getElementById('forgot-password-modal').style.display = 'block';
+        });
+    }
+    
+    // Forgot password link
+    if (forgotPasswordLink) {
+        forgotPasswordLink.addEventListener('click', (e) => {
+            e.preventDefault();
+            document.getElementById('login-modal').style.display = 'none';
+            document.getElementById('forgot-password-modal').style.display = 'block';
+        });
+    }
+
+    // Forgot password form - step 1: enter email
+    if (forgotPasswordForm) {
+        forgotPasswordForm.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const email = document.getElementById('reset-email').value.trim();
+            
+            if (!email) {
+                showAlert('Please enter your email address', 'error');
+                return;
+            }
+
+            try {
+                const response = await fetch('/api/auth/forgot-password', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({ email })
+                });
+
+                const data = await response.json();
+
+                if (response.ok) {
+                    document.getElementById('forgot-password-modal').style.display = 'none';
+                    document.getElementById('security-question-modal').style.display = 'block';
+                    
+                    // Display security question
+                    document.getElementById('security-question-text').textContent = data.security_question;
+                    document.getElementById('security-answer-input').setAttribute('data-email', email);
+                    
+                    showAlert('Please answer your security question', 'info');
+                } else {
+                    showAlert(data.error, 'error');
+                }
+            } catch (error) {
+                console.error('Forgot password request failed:', error);
+                showAlert('Failed to process request. Please try again.', 'error');
+            }
+        });
+    }
+
+    // Security question form - step 2: answer security question
+    if (securityQuestionForm) {
+        securityQuestionForm.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const answer = document.getElementById('security-answer-input').value.trim();
+            const email = document.getElementById('security-answer-input').getAttribute('data-email');
+
+            if (!answer) {
+                showAlert('Please enter your answer', 'error');
+                return;
+            }
+
+            try {
+                const response = await fetch('/api/auth/verify-security-answer', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({ 
+                        email: email,
+                        security_answer: answer 
+                    })
+                });
+
+                const data = await response.json();
+
+                if (response.ok) {
+                    document.getElementById('security-question-modal').style.display = 'none';
+                    document.getElementById('reset-password-modal').style.display = 'block';
+                    
+                    // Store the reset token temporarily
+                    document.getElementById('reset-password-form').setAttribute('data-reset-token', data.reset_token);
+                    document.getElementById('reset-password-form').setAttribute('data-email', email);
+                    
+                    showAlert('Security question verified! Please create a new password.', 'success');
+                } else {
+                    showAlert(data.error, 'error');
+                }
+            } catch (error) {
+                console.error('Security answer verification failed:', error);
+                showAlert('Failed to verify answer. Please try again.', 'error');
+            }
+        });
+    }
+
+    // Reset password form - step 3: create new password
+    if (resetPasswordForm) {
+        resetPasswordForm.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const newPassword = document.getElementById('new-reset-password').value;
+            const confirmPassword = document.getElementById('confirm-reset-password').value;
+            const resetToken = document.getElementById('reset-password-form').getAttribute('data-reset-token');
+            const email = document.getElementById('reset-password-form').getAttribute('data-email');
+
+            if (newPassword !== confirmPassword) {
+                showAlert('Passwords do not match', 'error');
+                return;
+            }
+
+            if (newPassword.length < 6) {
+                showAlert('Password must be at least 6 characters', 'error');
+                return;
+            }
+
+            try {
+                const response = await fetch('/api/auth/reset-password', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({ 
+                        email: email,
+                        new_password: newPassword,
+                        reset_token: resetToken
+                    })
+                });
+
+                const data = await response.json();
+
+                if (response.ok) {
+                    document.getElementById('reset-password-modal').style.display = 'none';
+                    showAlert('Password reset successfully! You can now login with your new password.', 'success');
+                    
+                    // Clear forms
+                    document.getElementById('forgot-password-form').reset();
+                    document.getElementById('security-question-form').reset();
+                    document.getElementById('reset-password-form').reset();
+                    
+                    // Show login modal
+                    setTimeout(() => {
+                        document.getElementById('login-modal').style.display = 'block';
+                    }, 2000);
+                } else {
+                    showAlert(data.error, 'error');
+                }
+            } catch (error) {
+                console.error('Password reset failed:', error);
+                showAlert('Failed to reset password. Please try again.', 'error');
+            }
+        });
+    }
+}
+
+
 // Real-time password match validation
 function validatePasswordMatch() {
     const password = document.getElementById('signup-password');
@@ -698,6 +914,29 @@ function validatePasswordMatch() {
             confirmPassword.style.borderColor = '';
         }
     }
+}
+
+// ==================== PASSWORD TOGGLE FUNCTIONALITY ====================
+
+function setupPasswordToggle() {
+    document.addEventListener('click', function(e) {
+        if (e.target.closest('.toggle-password')) {
+            const button = e.target.closest('.toggle-password');
+            const targetId = button.getAttribute('data-target');
+            const passwordInput = document.getElementById(targetId);
+            const icon = button.querySelector('i');
+            
+            if (passwordInput.type === 'password') {
+                passwordInput.type = 'text';
+                icon.classList.remove('fa-eye');
+                icon.classList.add('fa-eye-slash');
+            } else {
+                passwordInput.type = 'password';
+                icon.classList.remove('fa-eye-slash');
+                icon.classList.add('fa-eye');
+            }
+        }
+    });
 }
 
 // Logout function
@@ -716,6 +955,8 @@ async function logoutUser() {
             console.error('Logout API call failed:', error);
         }
     }
+
+
     
     // Clear local storage
     localStorage.removeItem('sessionToken');
@@ -923,6 +1164,15 @@ document.addEventListener('DOMContentLoaded', async function() {
     
     // Initialize authentication
     setupHomeAuth();
+
+    // Initialize password toggle functionality
+    setupPasswordToggle();
+
+    // Initialize counts
+    initializeCounts();
+
+    // Initialize forgot password
+    setupForgotPassword();
     
     // Update auth UI on page load
     //updateAuthUI();

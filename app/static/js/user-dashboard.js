@@ -16,6 +16,7 @@ class UserDashboard {
     }
 
     // Authentication check
+    // In checkAuthentication() method - Add better error handling
     async checkAuthentication() {
         const sessionToken = localStorage.getItem('sessionToken');
         const savedUser = localStorage.getItem('currentUser');
@@ -24,20 +25,23 @@ class UserDashboard {
             try {
                 const response = await fetch('/api/auth/me', {
                     headers: {
-                        'Authorization': sessionToken
+                        'Authorization': `Bearer ${sessionToken}` // Add Bearer prefix
                     }
                 });
                 
                 if (response.ok) {
                     const data = await response.json();
                     this.currentUser = data.user;
+                    localStorage.setItem('currentUser', JSON.stringify(data.user)); // Update stored user
                 } else {
                     this.redirectToLogin();
                 }
             } catch (error) {
                 console.error('Auth check failed:', error);
+                // Fallback to saved user but with warning
                 if (savedUser) {
                     this.currentUser = JSON.parse(savedUser);
+                    showAlert('Using cached user data - some features may be limited', 'warning');
                 } else {
                     this.redirectToLogin();
                 }
@@ -104,6 +108,88 @@ class UserDashboard {
                 }
             });
         });
+
+        document.addEventListener('click', (e) => {
+            // Handle wishlist removal
+            if (e.target.closest('.remove-from-wishlist')) {
+                const productId = e.target.closest('.remove-from-wishlist').dataset.id;
+                this.removeFromWishlist(productId);
+            }
+            
+            // Handle add to cart from wishlist
+            if (e.target.closest('.add-to-cart')) {
+                const productId = e.target.closest('.add-to-cart').dataset.id;
+                this.addToCartFromWishlist(productId);
+            }
+        });
+
+        // Logout functionality
+        const logoutBtn = document.getElementById('logout-btn');
+        if (logoutBtn) {
+            logoutBtn.addEventListener('click', () => this.logout());
+        }
+    }
+
+    // Add these NEW methods to your UserDashboard class
+
+    async removeFromWishlist(productId) {
+        try {
+            const sessionToken = localStorage.getItem('sessionToken');
+            const response = await fetch(`/api/wishlist/${productId}`, {
+                method: 'DELETE',
+                headers: {
+                    'Authorization': sessionToken
+                }
+            });
+
+            if (response.ok) {
+                showAlert('Item removed from wishlist', 'success');
+                this.loadWishlist(); // Refresh wishlist
+                this.loadUserStats(); // Update counts
+            } else {
+                showAlert('Failed to remove item from wishlist', 'error');
+            }
+        } catch (error) {
+            console.error('Failed to remove from wishlist:', error);
+            showAlert('Failed to remove item from wishlist', 'error');
+        }
+    }
+
+    async addToCartFromWishlist(productId) {
+        try {
+            const sessionToken = localStorage.getItem('sessionToken');
+            const response = await fetch('/api/cart/add', {
+                method: 'POST',
+                headers: {
+                    'Authorization': sessionToken,
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({
+                    product_id: parseInt(productId),
+                    quantity: 1
+                })
+            });
+
+            if (response.ok) {
+                showAlert('Item added to cart', 'success');
+            } else {
+                showAlert('Failed to add item to cart', 'error');
+            }
+        } catch (error) {
+            console.error('Failed to add to cart:', error);
+            showAlert('Failed to add item to cart', 'error');
+        }
+    }
+
+    logout() {
+        if (confirm('Are you sure you want to logout?')) {
+            localStorage.removeItem('sessionToken');
+            localStorage.removeItem('currentUser');
+            showAlert('Logged out successfully', 'success');
+            setTimeout(() => {
+                window.location.href = 'index.html';
+            }, 1500);
+        }
     }
 
     // NEW: Tab switching functionality
@@ -267,17 +353,33 @@ class UserDashboard {
         `;
     }
 
+    // Replace the empty loadRecentlyViewed() method
     async loadRecentlyViewed() {
-        // Implementation for recently viewed
         const recentlyViewed = JSON.parse(localStorage.getItem('recentlyViewed') || '[]');
         const container = document.getElementById('recently-viewed');
         
         if (!container) return;
 
         if (recentlyViewed.length === 0) {
-            container.innerHTML = '<p class="empty-message">No recently viewed products</p>';
+            container.innerHTML = '<div class="empty-state"><i class="fas fa-eye"></i><p>No recently viewed products</p></div>';
             return;
         }
+
+        // Display recently viewed products
+        const productsHTML = recentlyViewed.slice(0, 4).map(product => `
+            <div class="product-card-small">
+                <div class="product-image">
+                    <img src="${product.image || '/images/placeholder.jpg'}" alt="${product.name}">
+                </div>
+                <div class="product-info">
+                    <h4 class="product-name">${product.name}</h4>
+                    <p class="product-price">$${product.price}</p>
+                    <button class="btn btn-primary" onclick="window.location.href='product.html?id=${product.id}'">View Again</button>
+                </div>
+            </div>
+        `).join('');
+
+        container.innerHTML = productsHTML;
     }
 
     async loadTabData(tabName) {
@@ -547,9 +649,31 @@ class UserDashboard {
         `;
     }
 
+    // Add form validation helper method
+    validateForm(formElement) {
+        const inputs = formElement.querySelectorAll('input[required]');
+        let isValid = true;
+
+        inputs.forEach(input => {
+            if (!input.value.trim()) {
+                isValid = false;
+                input.classList.add('error');
+            } else {
+                input.classList.remove('error');
+            }
+        });
+
+        return isValid;
+    }
+
     // NEW: Enhanced form submissions
     async updateProfile(e) {
         e.preventDefault();
+
+        if (!this.validateForm(e.target)) {
+            showAlert('Please fill in all required fields', 'error');
+            return;
+        }
         
         const formData = new FormData(e.target);
         const profileData = {
@@ -705,6 +829,23 @@ class UserDashboard {
             this.populateProfileForm(this.currentUser);
         }
     }
+}
+
+// Add loading indicator methods
+showLoading(container) {
+    if (container) {
+        container.innerHTML =
+            <div class="loading-state">
+                <i class="fas fa-spinner fa-spin"></i>
+                <p>Loading...</p>
+            </div> 
+        ;
+    }
+}
+
+hideLoading(container) {
+    // Remove loading state - content will be populated by other methods
+   container.innerHTML = '';
 }
 
 // Global functions for HTML onclick handlers
