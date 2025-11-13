@@ -58,6 +58,36 @@ h1, h2, h3, h4, h5, h6 {
     border-radius: 2px;
 }
 
+/* ==================== PASSWORD TOGGLE STYLES ==================== */
+
+.password-container {
+    position: relative;
+    width: 100%;
+}
+
+.password-container input {
+    padding-right: 45px;
+    width: 100%;
+}
+
+.toggle-password {
+    position: absolute;
+    right: 12px;
+    top: 50%;
+    transform: translateY(-50%);
+    background: none;
+    border: none;
+    color: var(--charcoal);
+    cursor: pointer;
+    padding: 5px;
+    font-size: 0.9rem;
+    transition: color 0.3s ease;
+}
+
+.toggle-password:hover {
+    color: var(--navy);
+}
+
 
 /* ==================== CHRISTMAS STICKY BANNER ==================== */
 

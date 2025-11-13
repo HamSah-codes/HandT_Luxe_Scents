@@ -5,8 +5,8 @@ let currentUser = null;
 
 
 // User data
-let userCart = [];
-let userWishlist = [];
+//let userCart = [];
+//let userWishlist = [];
 let userReviews = [];
 
 
@@ -759,6 +759,253 @@ async function logoutUser() {
     }
 }
 
+// ==================== FORGOT PASSWORD FUNCTIONALITY ====================
+
+function setupForgotPassword() {
+    const forgotPasswordLink = document.getElementById('forgot-password-link');
+    const forgotPasswordForm = document.getElementById('forgot-password-form');
+    const securityQuestionForm = document.getElementById('security-question-form');
+    const resetPasswordForm = document.getElementById('reset-password-form');
+
+    // Forgot password link
+    if (forgotPasswordLink) {
+        forgotPasswordLink.addEventListener('click', (e) => {
+            e.preventDefault();
+            document.getElementById('login-modal').style.display = 'none';
+            document.getElementById('forgot-password-modal').style.display = 'block';
+        });
+    }
+
+    // Forgot password form - step 1: enter email
+    if (forgotPasswordForm) {
+        forgotPasswordForm.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const email = document.getElementById('reset-email').value.trim();
+            
+            if (!email) {
+                showAlert('Please enter your email address', 'error');
+                return;
+            }
+
+            try {
+                const response = await fetch('/api/auth/forgot-password', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({ email })
+                });
+
+                const data = await response.json();
+
+                if (response.ok) {
+                    document.getElementById('forgot-password-modal').style.display = 'none';
+                    document.getElementById('security-question-modal').style.display = 'block';
+                    
+                    // Display security question
+                    document.getElementById('security-question-text').textContent = data.security_question;
+                    document.getElementById('security-answer-input').setAttribute('data-email', email);
+                    
+                    showAlert('Please answer your security question', 'info');
+                } else {
+                    showAlert(data.error, 'error');
+                }
+            } catch (error) {
+                console.error('Forgot password request failed:', error);
+                showAlert('Failed to process request. Please try again.', 'error');
+            }
+        });
+    }
+
+    // Security question form - step 2: answer security question
+    if (securityQuestionForm) {
+        securityQuestionForm.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const answer = document.getElementById('security-answer-input').value.trim();
+            const email = document.getElementById('security-answer-input').getAttribute('data-email');
+
+            if (!answer) {
+                showAlert('Please enter your answer', 'error');
+                return;
+            }
+
+            try {
+                const response = await fetch('/api/auth/verify-security-answer', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({ 
+                        email: email,
+                        security_answer: answer 
+                    })
+                });
+
+                const data = await response.json();
+
+                if (response.ok) {
+                    document.getElementById('security-question-modal').style.display = 'none';
+                    document.getElementById('reset-password-modal').style.display = 'block';
+                    
+                    // Store the reset token temporarily
+                    document.getElementById('reset-password-form').setAttribute('data-reset-token', data.reset_token);
+                    document.getElementById('reset-password-form').setAttribute('data-email', email);
+                    
+                    showAlert('Security question verified! Please create a new password.', 'success');
+                } else {
+                    showAlert(data.error, 'error');
+                }
+            } catch (error) {
+                console.error('Security answer verification failed:', error);
+                showAlert('Failed to verify answer. Please try again.', 'error');
+            }
+        });
+    }
+
+    // Reset password form - step 3: create new password
+    if (resetPasswordForm) {
+        resetPasswordForm.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const newPassword = document.getElementById('new-reset-password').value;
+            const confirmPassword = document.getElementById('confirm-reset-password').value;
+            const resetToken = document.getElementById('reset-password-form').getAttribute('data-reset-token');
+            const email = document.getElementById('reset-password-form').getAttribute('data-email');
+
+            if (newPassword !== confirmPassword) {
+                showAlert('Passwords do not match', 'error');
+                return;
+            }
+
+            if (newPassword.length < 6) {
+                showAlert('Password must be at least 6 characters', 'error');
+                return;
+            }
+
+            try {
+                const response = await fetch('/api/auth/reset-password', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({ 
+                        email: email,
+                        new_password: newPassword,
+                        reset_token: resetToken
+                    })
+                });
+
+                const data = await response.json();
+
+                if (response.ok) {
+                    document.getElementById('reset-password-modal').style.display = 'none';
+                    showAlert('Password reset successfully! You can now login with your new password.', 'success');
+                    
+                    // Clear forms
+                    document.getElementById('forgot-password-form').reset();
+                    document.getElementById('security-question-form').reset();
+                    document.getElementById('reset-password-form').reset();
+                    
+                    // Show login modal
+                    setTimeout(() => {
+                        document.getElementById('login-modal').style.display = 'block';
+                    }, 2000);
+                } else {
+                    showAlert(data.error, 'error');
+                }
+            } catch (error) {
+                console.error('Password reset failed:', error);
+                showAlert('Failed to reset password. Please try again.', 'error');
+            }
+        });
+    }
+}
+
+// ==================== UPDATED SIGNUP FUNCTION ====================
+
+async function handleSignup(e) {
+    e.preventDefault();
+    
+    const fullName = document.getElementById('signup-name').value.trim();
+    const email = document.getElementById('signup-email').value.trim().toLowerCase();
+    const password = document.getElementById('signup-password').value;
+    const confirmPassword = document.getElementById('signup-confirm-password').value;
+    const securityQuestion = document.getElementById('security-question').value;
+    const securityAnswer = document.getElementById('security-answer').value.trim();
+
+    // Validation
+    if (!fullName || !email || !password || !confirmPassword || !securityQuestion || !securityAnswer) {
+        showAlert('Please fill in all fields', 'error');
+        return;
+    }
+
+    // Email validation
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(email)) {
+        showAlert('Please enter a valid email address', 'error');
+        return;
+    }
+
+    // Password validation
+    if (password.length < 6) {
+        showAlert('Password must be at least 6 characters', 'error');
+        return;
+    }
+
+    // Password match validation
+    if (password !== confirmPassword) {
+        showAlert('Passwords do not match', 'error');
+        return;
+    }
+
+    try {
+        const response = await fetch('/api/auth/signup', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({ 
+                fullName, 
+                email, 
+                password,
+                security_question: securityQuestion,
+                security_answer: securityAnswer
+            })
+        });
+
+        const data = await response.json();
+
+        if (response.ok) {
+            // Store session token and user data
+            localStorage.setItem('sessionToken', data.sessionToken);
+            localStorage.setItem('currentUser', JSON.stringify(data.user));
+            
+            // Signup successful
+            currentUser = data.user;
+            showAlert(`Account created successfully! Welcome, ${data.user.fullName}!`, 'success');
+            document.getElementById('signup-modal').style.display = 'none';
+            e.target.reset();
+            
+            updateAuthUI();
+            updateWelcomeMessage();
+            
+            // Clear password match error
+            const errorElement = document.getElementById('password-match-error');
+            if (errorElement) {
+                errorElement.style.display = 'none';
+            }
+            
+            // Redirect to dashboard
+            setTimeout(() => {
+                window.location.href = 'user-interface.html';
+            }, 1000);
+        } else {
+            showAlert(data.error, 'error');
+        }
+    } catch (error) {
+        showAlert('Signup failed. Please try again.', 'error');
+    }
+}
+
 // Update checkAuthentication to use backend
 async function checkAuthentication() {
     const sessionToken = localStorage.getItem('sessionToken');
@@ -965,46 +1212,45 @@ function displayAllProducts(products = allProducts) {
 
 
 
-// Display Wishlist
+// Update all functions to use localStorage:
+
 function displayWishlist() {
     const wishlistGrid = document.getElementById('wishlist-items');
+    const wishlist = JSON.parse(localStorage.getItem('wishlist')) || [];
     
     if (wishlistGrid) {
         wishlistGrid.innerHTML = '';
         
-        if (userWishlist.length === 0) {
+        if (wishlist.length === 0) {
             wishlistGrid.innerHTML = '<p class="empty-message">Your wishlist is empty</p>';
             return;
         }
         
-        userWishlist.forEach(itemId => {
-            const product = allProducts.find(p => p.id === itemId);
-            if (product) {
-                const wishlistItem = document.createElement('div');
-                wishlistItem.className = 'wishlist-item';
-                
-                wishlistItem.innerHTML = `
-                    <div class="wishlist-item-image">
-                        <img src="${product.image}" alt="${product.name}">
-                    </div>
-                    <div class="wishlist-item-details">
-                        <h4>${product.name}</h4>
-                        <p>${product.brand}</p>
-                        <p class="product-price">$${product.price}</p>
-                    </div>
-                    <div class="wishlist-item-actions">
-                        <button class="btn btn-primary move-to-cart" data-id="${product.id}">Add to Cart</button>
-                        <button class="btn btn-secondary remove-from-wishlist" data-id="${product.id}">
-                            <i class="fas fa-times"></i>
-                        </button>
-                    </div>
-                `;
-                
-                wishlistGrid.appendChild(wishlistItem);
-            }
+        wishlist.forEach(product => {
+            const wishlistItem = document.createElement('div');
+            wishlistItem.className = 'wishlist-item';
+            
+            wishlistItem.innerHTML = `
+                <div class="wishlist-item-image">
+                    <img src="${product.image}" alt="${product.name}">
+                </div>
+                <div class="wishlist-item-details">
+                    <h4>${product.name}</h4>
+                    <p>${product.brand}</p>
+                    <p class="product-price">GH₵${product.price}</p>
+                </div>
+                <div class="wishlist-item-actions">
+                    <button class="btn btn-primary move-to-cart" data-id="${product.id}">Add to Cart</button>
+                    <button class="btn btn-secondary remove-from-wishlist" data-id="${product.id}">
+                        <i class="fas fa-times"></i>
+                    </button>
+                </div>
+            `;
+            
+            wishlistGrid.appendChild(wishlistItem);
         });
         
-        // Add event listeners for wishlist actions
+        // Add event listeners
         document.querySelectorAll('.move-to-cart').forEach(button => {
             button.addEventListener('click', moveToCart);
         });
@@ -1015,15 +1261,15 @@ function displayWishlist() {
     }
 }
 
-// Display Cart
 function displayCart() {
     const cartItems = document.getElementById('cart-items');
     const cartTotal = document.getElementById('cart-total');
+    const cart = JSON.parse(localStorage.getItem('cart')) || [];
     
     if (cartItems) {
         cartItems.innerHTML = '';
         
-        if (userCart.length === 0) {
+        if (cart.length === 0) {
             cartItems.innerHTML = '<p class="empty-message">Your cart is empty</p>';
             if (cartTotal) cartTotal.textContent = '0.00';
             return;
@@ -1031,46 +1277,43 @@ function displayCart() {
         
         let total = 0;
         
-        userCart.forEach(item => {
-            const product = allProducts.find(p => p.id === item.productId);
-            if (product) {
-                const cartItem = document.createElement('div');
-                cartItem.className = 'cart-item';
-                
-                const itemTotal = product.price * item.quantity;
-                total += itemTotal;
-                
-                cartItem.innerHTML = `
-                    <div class="cart-item-image">
-                        <img src="${product.image}" alt="${product.name}">
-                    </div>
-                    <div class="cart-item-details">
-                        <h4>${product.name}</h4>
-                        <p>${product.brand}</p>
-                        <p class="product-price">$${product.price}</p>
-                    </div>
-                    <div class="cart-item-quantity">
-                        <button class="quantity-btn decrease" data-id="${product.id}">-</button>
-                        <span class="quantity">${item.quantity}</span>
-                        <button class="quantity-btn increase" data-id="${product.id}">+</button>
-                    </div>
-                    <div class="cart-item-total">
-                        $${itemTotal.toFixed(2)}
-                    </div>
-                    <div class="cart-item-actions">
-                        <button class="btn btn-secondary remove-from-cart" data-id="${product.id}">
-                            <i class="fas fa-trash"></i>
-                        </button>
-                    </div>
-                `;
-                
-                cartItems.appendChild(cartItem);
-            }
+        cart.forEach(item => {
+            const cartItem = document.createElement('div');
+            cartItem.className = 'cart-item';
+            
+            const itemTotal = item.price * item.quantity;
+            total += itemTotal;
+            
+            cartItem.innerHTML = `
+                <div class="cart-item-image">
+                    <img src="${item.image}" alt="${item.name}">
+                </div>
+                <div class="cart-item-details">
+                    <h4>${item.name}</h4>
+                    <p>${item.brand}</p>
+                    <p class="product-price">GH₵${item.price}</p>
+                </div>
+                <div class="cart-item-quantity">
+                    <button class="quantity-btn decrease" data-id="${item.id}">-</button>
+                    <span class="quantity">${item.quantity}</span>
+                    <button class="quantity-btn increase" data-id="${item.id}">+</button>
+                </div>
+                <div class="cart-item-total">
+                    GH₵${itemTotal.toFixed(2)}
+                </div>
+                <div class="cart-item-actions">
+                    <button class="btn btn-secondary remove-from-cart" data-id="${item.id}">
+                        <i class="fas fa-trash"></i>
+                    </button>
+                </div>
+            `;
+            
+            cartItems.appendChild(cartItem);
         });
         
         if (cartTotal) cartTotal.textContent = total.toFixed(2);
         
-        // Add event listeners for cart actions
+        // Add event listeners
         document.querySelectorAll('.increase').forEach(button => {
             button.addEventListener('click', increaseQuantity);
         });
@@ -1084,6 +1327,58 @@ function displayCart() {
         });
     }
 }
+
+// Update cart functions
+function addToCart(e) {
+    const productId = parseInt(e.target.getAttribute('data-id'));
+    const product = allProducts.find(p => p.id === productId);
+    
+    if (product) {
+        let cart = JSON.parse(localStorage.getItem('cart')) || [];
+        const existingItem = cart.find(item => item.id === productId);
+        
+        if (existingItem) {
+            existingItem.quantity += 1;
+        } else {
+            cart.push({
+                ...product,
+                quantity: 1
+            });
+        }
+        
+        localStorage.setItem('cart', JSON.stringify(cart));
+        displayCart();
+        updateBadgeCounts();
+        showAlert('Product added to cart!', 'success');
+    }
+}
+
+function addToWishlist(e) {
+    const productId = parseInt(e.target.closest('.add-to-wishlist').getAttribute('data-id'));
+    const product = allProducts.find(p => p.id === productId);
+    const heartIcon = e.target.closest('.add-to-wishlist').querySelector('i');
+    
+    let wishlist = JSON.parse(localStorage.getItem('wishlist')) || [];
+    
+    if (!wishlist.find(item => item.id === productId)) {
+        wishlist.push(product);
+        localStorage.setItem('wishlist', JSON.stringify(wishlist));
+        heartIcon.classList.remove('far');
+        heartIcon.classList.add('fas');
+        showAlert('Product added to wishlist!', 'success');
+    } else {
+        wishlist = wishlist.filter(item => item.id !== productId);
+        localStorage.setItem('wishlist', JSON.stringify(wishlist));
+        heartIcon.classList.remove('fas');
+        heartIcon.classList.add('far');
+        showAlert('Product removed from wishlist!', 'info');
+    }
+    
+    displayWishlist();
+    updateBadgeCounts();
+}
+
+// Update other cart/wishlist functions similarly...
 
 // Display User Reviews
 function displayUserReviews() {
@@ -1485,6 +1780,7 @@ document.addEventListener('DOMContentLoaded', async function() {
     await checkAuthentication();
     protectDashboard();
     setupAuthModals();
+    setupForgotPassword();
     
     // Only load dashboard content if user is authenticated
     if (currentUser || !window.location.pathname.includes('user-interface.html')) {
