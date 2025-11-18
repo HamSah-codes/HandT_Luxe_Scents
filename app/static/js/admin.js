@@ -351,13 +351,27 @@ function displayWishlists() {
     if (wishlistsTable) {
         wishlistsTable.innerHTML = '';
         
-        wishlists.forEach(item => {
+        // Get wishlist from localStorage (in real app, this would come from backend)
+        const wishlist = JSON.parse(localStorage.getItem('wishlist')) || [];
+        
+        if (wishlist.length === 0) {
+            wishlistsTable.innerHTML = `
+                <tr>
+                    <td colspan="3" style="text-align: center; padding: 20px;">
+                        No items in user wishlists
+                    </td>
+                </tr>
+            `;
+            return;
+        }
+        
+        wishlist.forEach(item => {
             const row = document.createElement('tr');
             
             row.innerHTML = `
-                <td>${item.user}</td>
-                <td>${item.product}</td>
-                <td>${item.addedDate}</td>
+                <td>${currentUser ? currentUser.fullName : 'Guest User'}</td>
+                <td>${item.name}</td>
+                <td>${new Date().toISOString().split('T')[0]}</td>
             `;
             
             wishlistsTable.appendChild(row);

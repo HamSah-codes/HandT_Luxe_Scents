@@ -18,12 +18,15 @@ class ShopPage {
     async init() {
         await this.loadProducts();
         this.setupEventListeners();
+        this.setupSearch();
         this.displayProducts();
         this.updateResultsCount();
         this.addScrollIndicators();
+        this.checkForSelectedProduct();
+        this.checkForSearchTerm();
     }
 
-        // Add search functionality to ShopPage class
+    // Add search functionality to ShopPage class
     setupSearch() {
         const searchInput = document.querySelector('.search-input');
         const searchBtn = document.querySelector('.search-btn');
@@ -35,38 +38,81 @@ class ShopPage {
             suggestionsContainer.className = 'search-suggestions';
             searchInput.parentNode.appendChild(suggestionsContainer);
 
+            // Create clear button
+            const clearBtn = document.createElement('button');
+            clearBtn.className = 'clear-search';
+            clearBtn.innerHTML = '<i class="fas fa-times"></i>';
+            clearBtn.type = 'button';
+            searchInput.parentNode.appendChild(clearBtn);
+
             const performSearch = () => {
                 const searchTerm = searchInput.value.toLowerCase().trim();
                 if (searchTerm) {
-                    const searchResults = this.products.filter(product => 
-                        product.name.toLowerCase().includes(searchTerm) ||
-                        product.brand.toLowerCase().includes(searchTerm) ||
-                        product.category.toLowerCase().includes(searchTerm) ||
-                        product.scent.toLowerCase().includes(searchTerm) ||
-                        product.description.toLowerCase().includes(searchTerm)
+                    // Check if this is an exact product name match
+                    const exactProduct = this.products.find(product => 
+                        product.name.toLowerCase() === searchTerm.toLowerCase()
                     );
 
-                    this.filteredProducts = searchResults;
-                    this.displayProducts();
-                    this.updateResultsCount();
-                    
-                    if (searchResults.length === 0) {
-                        this.showNotification('No products found matching your search', 'info');
+                    if (exactProduct) {
+                        // If exact match, show only that product
+                        this.filteredProducts = [exactProduct];
+                        this.showNotification(`Showing product: ${exactProduct.name}`, 'success');
                     } else {
-                        this.showNotification(`Found ${searchResults.length} product(s)`, 'success');
+                        // Otherwise perform general search
+                        const searchResults = this.products.filter(product => 
+                            product.name.toLowerCase().includes(searchTerm) ||
+                            product.brand.toLowerCase().includes(searchTerm) ||
+                            product.category.toLowerCase().includes(searchTerm) ||
+                            product.scent.toLowerCase().includes(searchTerm) ||
+                            product.description.toLowerCase().includes(searchTerm)
+                        );
+
+                        this.filteredProducts = searchResults;
+                        
+                        if (searchResults.length === 0) {
+                            this.showNotification('No products found matching your search', 'info');
+                        } else {
+                            this.showNotification(`Found ${searchResults.length} product(s)`, 'success');
+                        }
                     }
                     
+                    this.displayProducts();
+                    this.updateResultsCount();
                     this.hideSuggestions();
+                    
+                    // Scroll to products section
+                    setTimeout(() => {
+                        document.querySelector('.products-main').scrollIntoView({ 
+                            behavior: 'smooth' 
+                        });
+                    }, 500);
                 }
             };
+
+            // Clear search functionality
+            clearBtn.addEventListener('click', () => {
+                searchInput.value = '';
+                this.filteredProducts = [...this.products];
+                this.displayProducts();
+                this.updateResultsCount();
+                this.hideSuggestions();
+                clearBtn.style.display = 'none';
+                searchInput.focus();
+            });
 
             // Real-time search suggestions
             searchInput.addEventListener('input', (e) => {
                 const searchTerm = e.target.value.trim().toLowerCase();
+                clearBtn.style.display = searchTerm ? 'block' : 'none';
+                
                 if (searchTerm.length > 0) {
                     this.showSuggestions(searchTerm);
                 } else {
                     this.hideSuggestions();
+                    // Reset to all products when search is cleared
+                    this.filteredProducts = [...this.products];
+                    this.displayProducts();
+                    this.updateResultsCount();
                 }
             });
 
@@ -79,10 +125,83 @@ class ShopPage {
 
             // Hide suggestions when clicking outside
             document.addEventListener('click', (e) => {
-                if (!searchInput.contains(e.target) && (!suggestionsContainer || !suggestionsContainer.contains(e.target))) {
+                if (!searchInput.contains(e.target) && 
+                    !clearBtn.contains(e.target) &&
+                    (!suggestionsContainer || !suggestionsContainer.contains(e.target))) {
                     this.hideSuggestions();
                 }
             });
+        }
+    }
+    // Show search suggestions in ShopPages
+    showSuggestions(searchTerm) {
+        const suggestionsContainer = document.querySelector('.search-suggestions');
+        if (!suggestionsContainer) return;
+
+        const suggestions = this.products.filter(product => 
+            product.name.toLowerCase().includes(searchTerm) ||
+            product.brand.toLowerCase().includes(searchTerm)
+        ).slice(0, 5);
+
+        if (suggestions.length > 0) {
+            suggestionsContainer.innerHTML = suggestions.map(product => `
+                <div class="suggestion-item" data-product-id="${product.id}">
+                    <img src="${product.image}" alt="${product.name}" class="suggestion-image">
+                    <div class="suggestion-info">
+                        <div class="suggestion-name">${product.name}</div>
+                        <div class="suggestion-brand">${product.brand}</div>
+                        <div class="suggestion-price">GH₵${product.price}</div>
+                    </div>
+                </div>
+            `).join('');
+
+            suggestionsContainer.style.display = 'block';
+
+            // Add click event to suggestions
+            suggestionsContainer.querySelectorAll('.suggestion-item').forEach(item => {
+                item.addEventListener('click', () => {
+                    const productId = item.getAttribute('data-product-id');
+                    const searchInput = document.querySelector('.search-input');
+                    const product = this.products.find(p => p.id == productId);
+                    
+                    if (product) {
+                        searchInput.value = product.name;
+                        this.hideSuggestions();
+                        
+                        // Filter to show ONLY this specific product
+                        this.filteredProducts = [product];
+                        this.displayProducts();
+                        this.updateResultsCount();
+                        this.showNotification(`Showing product: ${product.name}`, 'success');
+                        
+                        // Scroll to products section
+                        setTimeout(() => {
+                            document.querySelector('.products-main').scrollIntoView({ 
+                                behavior: 'smooth' 
+                            });
+                        }, 500);
+                    }
+                });
+            });
+        } else {
+            this.hideSuggestions();
+        }
+    }
+
+    // New method to handle product selection and redirect to shop
+    selectProductForShop(productId) {
+        // Store the product ID in localStorage to filter on shop page
+        localStorage.setItem('selectedProductId', productId);
+        
+        // Redirect to shop page
+        window.location.href = 'shop.html';
+    }
+
+    // Hide search suggestions in ShopPage
+    hideSuggestions() {
+        const suggestionsContainer = document.querySelector('.search-suggestions');
+        if (suggestionsContainer) {
+            suggestionsContainer.style.display = 'none';
         }
     }
 
@@ -141,6 +260,82 @@ class ShopPage {
         const suggestionsContainer = document.querySelector('.search-suggestions');
         if (suggestionsContainer) {
             suggestionsContainer.style.display = 'none';
+        }
+    }
+
+    // Check if a product was selected from search and filter accordingly
+    checkForSelectedProduct() {
+        const selectedProductId = localStorage.getItem('selectedProductId');
+        
+        if (selectedProductId) {
+            const product = this.products.find(p => p.id == selectedProductId);
+            
+            if (product) {
+                // Filter to show only the selected product
+                this.filteredProducts = [product];
+                this.displayProducts();
+                this.updateResultsCount();
+                
+                // Set the search input value
+                const searchInput = document.querySelector('.search-input');
+                if (searchInput) {
+                    searchInput.value = product.name;
+                }
+                
+                // Show notification
+                this.showNotification(`Showing product: ${product.name}`, 'success');
+                
+                // Clear the stored product ID
+                localStorage.removeItem('selectedProductId');
+                
+                // Scroll to products section
+                setTimeout(() => {
+                    document.querySelector('.products-main').scrollIntoView({ 
+                        behavior: 'smooth' 
+                    });
+                }, 500);
+            }
+        }
+    }
+
+    // Check for search terms from other pages
+    checkForSearchTerm() {
+        const searchTerm = localStorage.getItem('searchTerm');
+        
+        if (searchTerm) {
+            const searchInput = document.querySelector('.search-input');
+            if (searchInput) {
+                searchInput.value = searchTerm;
+            }
+            
+            // Perform the search
+            const searchResults = this.products.filter(product => 
+                product.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                product.brand.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                product.category.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                product.scent.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                product.description.toLowerCase().includes(searchTerm.toLowerCase())
+            );
+
+            this.filteredProducts = searchResults;
+            this.displayProducts();
+            this.updateResultsCount();
+            
+            if (searchResults.length === 0) {
+                this.showNotification('No products found matching your search', 'info');
+            } else {
+                this.showNotification(`Found ${searchResults.length} product(s)`, 'success');
+            }
+            
+            // Clear the stored search term
+            localStorage.removeItem('searchTerm');
+            
+            // Scroll to products section
+            setTimeout(() => {
+                document.querySelector('.products-main').scrollIntoView({ 
+                    behavior: 'smooth' 
+                });
+            }, 500);
         }
     }
 
@@ -345,7 +540,7 @@ class ShopPage {
                 id: 13,
                 name: "Ramz Lattafa(Silver)",
                 brand: "Lattafa",
-                price: 2000.00,
+                price: 200.00,
                 originalPrice: 250.00,
                 image: "/static/assets/img/Ramz_Lattafa(Silver).jpeg",
                 category: "men",
@@ -944,7 +1139,6 @@ class ShopPage {
             // Update cart count
             this.updateCartCount();
             
-            // Show success message
             this.showNotification(`${product.name} added to cart!`, 'success');
         }
     }
@@ -960,14 +1154,11 @@ class ShopPage {
             
             if (!existingItem) {
                 wishlist.push(product);
-                
-                // Save back to localStorage
                 localStorage.setItem('wishlist', JSON.stringify(wishlist));
                 
                 // Update wishlist count
                 this.updateWishlistCount();
                 
-                // Show success message
                 this.showNotification(`${product.name} added to wishlist!`, 'success');
             } else {
                 this.showNotification(`${product.name} is already in your wishlist!`, 'info');
@@ -978,14 +1169,21 @@ class ShopPage {
     updateCartCount() {
         const cart = JSON.parse(localStorage.getItem('cart')) || [];
         const totalItems = cart.reduce((sum, item) => sum + item.quantity, 0);
-        document.getElementById('cart-count').textContent = totalItems;
+        
+        // Update all cart count elements
+        document.querySelectorAll('#cart-count').forEach(element => {
+            element.textContent = totalItems;
+        });
     }
 
     updateWishlistCount() {
         const wishlist = JSON.parse(localStorage.getItem('wishlist')) || [];
-        document.getElementById('wishlist-count').textContent = wishlist.length;
+        
+        // Update all wishlist count elements
+        document.querySelectorAll('#wishlist-count').forEach(element => {
+            element.textContent = wishlist.length;
+        });
     }
-
     showNotification(message, type = 'info') {
         // Create notification element
         const notification = document.createElement('div');
