@@ -55,16 +55,16 @@
                         </div>
 
                         <!-- Wishlist -->
-                        <a href="#wishlist" class="icon-link" title="Wishlist">
+                        <button class="icon-link" title="Wishlist" onclick="userDashboard.showSection('wishlist')">
                             <i class="fas fa-heart"></i>
                             <span class="icon-badge wishlist-count">0</span>
-                        </a>
+                        </button>
 
                         <!-- Cart -->
-                        <a href="#cart" class="icon-link" title="Shopping Cart">
+                        <button class="icon-link" title="Shopping Cart" onclick="userDashboard.showSection('cart')">
                             <i class="fas fa-shopping-bag"></i>
                             <span class="icon-badge cart-count">0</span>
-                        </a>
+                        </button>
                     </div>
                 </div>
             </div>
@@ -75,7 +75,7 @@
     <section class="user-dashboard">
         <div class="dashboard-container">
             <div class="dashboard-header">
-                <h1 class="dashboard-title">My Account</h1>
+                <h1 class="dashboard-title" id="dashboard-welcome">Welcome!</h1>
                 <p class="dashboard-subtitle">Manage your profile, orders, and preferences</p>
             </div>
 

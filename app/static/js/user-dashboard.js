@@ -4,13 +4,32 @@ class UserDashboard {
         this.cartItems = [];
         this.wishlistItems = [];
         this.orders = [];
+        this.isLoading = false;
+        // Track loaded sections to prevent repeated API calls
+        this.loadedSections = new Set();
+        this.lastApiCall = {};
         this.init();
+    }
+
+    debounce(func, wait) {
+        let timeout;
+        return function executedFunction(...args) {
+            const later = () => {
+                clearTimeout(timeout);
+                func(...args);
+            };
+            clearTimeout(timeout);
+            timeout = setTimeout(later, wait);
+        };
     }
 
     async init() {
         await this.checkAuth();
         this.setupNavigation();
         this.setupEventListeners();
+        this.debouncedLoadCart = this.debounce(() => this.loadCart(), 300);
+        this.debouncedLoadWishlist = this.debounce(() => this.loadWishlist(), 300);
+        this.debouncedLoadOrders = this.debounce(() => this.loadOrders(), 300);
         this.loadUserData();
     }
 
@@ -100,15 +119,31 @@ class UserDashboard {
                 emailElement.textContent = this.currentUser.email;
             }
 
+            // Update dashboard welcome message
+            const welcomeTitle = document.getElementById('dashboard-welcome');
+            if (welcomeTitle) {
+                // Get first name only for a more personal greeting
+                const firstName = this.currentUser.fullName.split(' ')[0];
+                welcomeTitle.textContent = `Welcome, ${firstName}!`;
+            }
+
             // Update form fields
             const profileName = document.getElementById('profile-name');
             const profileEmail = document.getElementById('profile-email');
+            const profilePhone = document.getElementById('profile-phone');
+            const profileAddress = document.getElementById('profile-address');
             
             if (profileName) {
                 profileName.value = this.currentUser.fullName;
             }
             if (profileEmail) {
                 profileEmail.value = this.currentUser.email;
+            }
+            if (profilePhone) {
+                profilePhone.value = this.currentUser.phone || '';
+            }
+            if (profileAddress) {
+                profileAddress.value = this.currentUser.address || '';
             }
         } else {
             console.error('No user data available');
@@ -161,13 +196,29 @@ class UserDashboard {
             section.classList.remove('active');
         });
 
+        // Remove active class from all nav items
+        document.querySelectorAll('.user-nav-item').forEach(item => {
+            item.classList.remove('active');
+        });
+
         // Show selected section
         const targetSection = document.getElementById(`${sectionId}-section`);
         if (targetSection) {
             targetSection.classList.add('active');
+
+            // Add active class to corresponding nav item
+            const targetNavItem = document.querySelector(`[data-section="${sectionId}"]`);
+            if (targetNavItem) {
+                targetNavItem.classList.add('active');
+            }
             
-            // Load section data
-            this.loadSectionData(sectionId);
+            // Update URL hash
+            window.location.hash = sectionId;
+            
+            if (!this.loadedSections.has(sectionId)) {
+                this.loadSectionData(sectionId);
+                this.loadedSections.add(sectionId);
+            }
         }
     }
 
@@ -224,23 +275,35 @@ class UserDashboard {
         };
 
         try {
-            // Simulate API call - replace with actual API
-            this.currentUser.fullName = data.fullName;
-            this.currentUser.phone = data.phone;
-            this.currentUser.address = data.address;
-            
-            // Update localStorage
-            localStorage.setItem('userData', JSON.stringify(this.currentUser));
-            
-            this.showAlert('Profile updated successfully!', 'success');
-            this.updateUserUI();
-            
-            // Update main app if available
-            if (window.app && window.app.currentUser) {
-                window.app.currentUser.fullName = data.fullName;
-                window.app.updateAuthUI();
+            const sessionToken = localStorage.getItem('sessionToken');
+            const response = await fetch('/api/user/profile', {
+                method: 'PUT',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': sessionToken
+                },
+                body: JSON.stringify(data)
+            });
+
+            if (response.ok) {
+                const result = await response.json();
+                this.currentUser = result.user;
+                
+                // Update localStorage with new user data
+                localStorage.setItem('userData', JSON.stringify(this.currentUser));
+                
+                this.showAlert('Profile updated successfully!', 'success');
+                this.updateUserUI();
+                
+                // Update main app if available
+                if (window.app && window.app.currentUser) {
+                    window.app.currentUser = this.currentUser;
+                    window.app.updateAuthUI();
+                }
+            } else {
+                const error = await response.json();
+                this.showAlert(error.error || 'Error updating profile', 'error');
             }
-            
         } catch (error) {
             console.error('Update profile error:', error);
             this.showAlert('Error updating profile', 'error');
@@ -250,17 +313,24 @@ class UserDashboard {
     async loadOrders() {
         try {
             const sessionToken = localStorage.getItem('sessionToken');
+            console.log('🔍 Loading orders...');
+
             const response = await fetch('/api/orders', {
                 headers: {
                     'Authorization': sessionToken
                 }
             });
 
+            console.log('🔍 Orders API response status:', response.status);
+
             if (response.ok) {
                 const orders = await response.json();
+                console.log('🔍 Orders data received:', orders);
+                
                 const ordersList = document.getElementById('orders-list');
                 
-                if (orders.length === 0) {
+                if (!orders || orders.length === 0) {
+                    console.log('🔍 No orders found in response');
                     ordersList.innerHTML = `
                         <div class="empty-state">
                             <i class="fas fa-box-open"></i>
@@ -270,35 +340,198 @@ class UserDashboard {
                         </div>
                     `;
                 } else {
-                    ordersList.innerHTML = orders.map(order => `
-                        <div class="order-item">
-                            <div class="order-header">
-                                <div class="order-number">Order #${order.order_number}</div>
-                                <div class="order-date">${new Date(order.created_at).toLocaleDateString()}</div>
-                                <div class="order-status status-${order.status}">${order.status}</div>
-                            </div>
-                            <div class="order-details">
-                                <div class="order-items">${order.items.length} items</div>
-                                <div class="order-total">GH₵${order.total_amount}</div>
-                            </div>
-                            <div class="order-actions">
-                                <button class="view-order-btn" onclick="userDashboard.viewOrder(${order.id})">
-                                    View Details
-                                </button>
-                                ${order.status === 'pending' ? `
-                                    <button class="cancel-order-btn" onclick="userDashboard.cancelOrder(${order.id})">
-                                        Cancel Order
+                    console.log(`🔍 Rendering ${orders.length} orders`);
+                    ordersList.innerHTML = orders.map(order => {
+                        console.log('🔍 Processing order:', order);
+                        return `
+                            <div class="order-item">
+                                <div class="order-header">
+                                    <div class="order-number">Order #${order.order_number}</div>
+                                    <div class="order-date">${new Date(order.created_at).toLocaleDateString()}</div>
+                                    <div class="order-status status-${order.status}">${order.status}</div>
+                                </div>
+                                <div class="order-details">
+                                    <div class="order-items">${order.item_count || 'Unknown'} items</div>
+                                    <div class="order-total">GH₵${order.total_amount}</div>
+                                </div>
+                                <div class="order-actions">
+                                    <button class="view-order-btn" onclick="userDashboard.viewOrder(${order.id})">
+                                        View Details
                                     </button>
-                                ` : ''}
+                                    ${order.status === 'pending' ? `
+                                        <button class="cancel-order-btn" onclick="userDashboard.cancelOrder(${order.id})">
+                                            Cancel Order
+                                        </button>
+                                    ` : ''}
+                                </div>
                             </div>
-                        </div>
-                    `).join('');
+                        `;
+                    }).join('');
                 }
+            } else {
+                const errorText = await response.text();
+                console.error('❌ Orders API error:', response.status, errorText);
+                document.getElementById('orders-list').innerHTML = `
+                    <div class="error-state">
+                        <i class="fas fa-exclamation-triangle"></i>
+                        <h3>API Error ${response.status}</h3>
+                        <p>${errorText}</p>
+                    </div>
+                `;
             }
         } catch (error) {
-            console.error('Load orders error:', error);
-            document.getElementById('orders-list').innerHTML = '<p>Error loading orders. Please try again.</p>';
+            console.error('❌ Load orders error:', error);
+            document.getElementById('orders-list').innerHTML = `
+                <div class="error-state">
+                    <i class="fas fa-exclamation-triangle"></i>
+                    <h3>Connection Error</h3>
+                    <p>${error.message}</p>
+                </div>
+            `;
         }
+    }
+
+
+    async viewOrder(orderId) {
+        try {
+            console.log(`🔍 Viewing order details for: ${orderId}`);
+            
+            const sessionToken = localStorage.getItem('sessionToken');
+            const response = await fetch(`/api/orders/${orderId}`, {
+                headers: { 'Authorization': sessionToken }
+            });
+
+            if (response.ok) {
+                const orderData = await response.json();
+                this.showOrderDetailsModal(orderData);
+            } else {
+                this.showAlert('Failed to load order details', 'error');
+            }
+        } catch (error) {
+            console.error('View order error:', error);
+            this.showAlert('Error loading order details', 'error');
+        }
+    }
+
+    showOrderDetailsModal(orderData) {
+        const { order, items } = orderData;
+        
+        const modalHTML = `
+        <div id="order-details-modal" class="modal" style="display: block;">
+            <div class="modal-content" style="max-width: 700px;">
+                <div class="modal-header">
+                    <h2>Order Details</h2>
+                    <button class="close-modal">&times;</button>
+                </div>
+                
+                <div class="order-details-content">
+                    <!-- Order Summary -->
+                    <div class="order-summary-section">
+                        <h3>Order Information</h3>
+                        <div class="order-info-grid">
+                            <div class="order-info-item">
+                                <strong>Order Number:</strong>
+                                <span>${order.order_number}</span>
+                            </div>
+                            <div class="order-info-item">
+                                <strong>Order Date:</strong>
+                                <span>${new Date(order.created_at).toLocaleString()}</span>
+                            </div>
+                            <div class="order-info-item">
+                                <strong>Status:</strong>
+                                <span class="order-status status-${order.status}">${order.status}</span>
+                            </div>
+                            <div class="order-info-item">
+                                <strong>Total Amount:</strong>
+                                <span class="order-total">GH₵${order.total_amount}</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Shipping Information -->
+                    <div class="shipping-section">
+                        <h3>Shipping Information</h3>
+                        <div class="shipping-address">
+                            <p><strong>Shipping Address:</strong></p>
+                            <p>${order.shipping_address || 'Not specified'}</p>
+                        </div>
+                        ${order.customer_notes ? `
+                        <div class="order-notes">
+                            <p><strong>Order Notes:</strong></p>
+                            <p>${order.customer_notes}</p>
+                        </div>
+                        ` : ''}
+                    </div>
+
+                    <!-- Order Items -->
+                    <div class="order-items-section">
+                        <h3>Order Items (${items.length})</h3>
+                        <div class="order-items-list">
+                            ${items.map(item => `
+                            <div class="order-item-detail">
+                                <div class="item-image">
+                                    <img src="${item.image_url || '/static/assets/img/placeholder.jpg'}" 
+                                        alt="${item.name}"
+                                        onerror="this.src='/static/assets/img/placeholder.jpg'">
+                                </div>
+                                <div class="item-info">
+                                    <h4>${item.name}</h4>
+                                    <p class="item-brand">${item.brand}</p>
+                                    <div class="item-quantity-price">
+                                        <span class="quantity">Qty: ${item.quantity}</span>
+                                        <span class="price">GH₵${item.unit_price} each</span>
+                                    </div>
+                                </div>
+                                <div class="item-total">
+                                    GH₵${(item.unit_price * item.quantity).toFixed(2)}
+                                </div>
+                            </div>
+                            `).join('')}
+                        </div>
+                    </div>
+
+                    <!-- Order Total -->
+                    <div class="order-total-section">
+                        <div class="order-total-line">
+                            <strong>Total:</strong>
+                            <strong class="total-amount">GH₵${order.total_amount}</strong>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="modal-actions">
+                    <button class="btn btn-secondary" onclick="this.closest('.modal').remove()">
+                        Close
+                    </button>
+                    ${order.status === 'pending' ? `
+                    <button class="btn btn-danger" onclick="userDashboard.cancelOrder(${order.id})">
+                        Cancel Order
+                    </button>
+                    ` : ''}
+                </div>
+            </div>
+        </div>
+        `;
+
+        // Remove existing modal
+        const existingModal = document.getElementById('order-details-modal');
+        if (existingModal) existingModal.remove();
+        
+        // Add new modal
+        document.body.insertAdjacentHTML('beforeend', modalHTML);
+        
+        // Setup event listeners
+        this.setupOrderDetailsModalEvents();
+    }
+
+    setupOrderDetailsModalEvents() {
+        const modal = document.getElementById('order-details-modal');
+        const closeBtn = modal.querySelector('.close-modal');
+        
+        closeBtn.addEventListener('click', () => modal.remove());
+        modal.addEventListener('click', (e) => {
+            if (e.target === modal) modal.remove();
+        });
     }
 
     async loadWishlist() {
@@ -345,7 +578,7 @@ class UserDashboard {
                                 <div class="wishlist-price">GH₵${item.price}</div>
                                 <div class="wishlist-actions">
                                     <button class="move-to-cart" onclick="userDashboard.moveToCart(${item.product_id})">
-                                        Add to Cart
+                                        <i class="fas fa-shopping-cart"></i> Add to Cart
                                     </button>
                                 </div>
                             </div>
@@ -417,6 +650,11 @@ class UserDashboard {
                     if (cartSummary) {
                         document.getElementById('cart-total-amount').textContent = `GH₵${cartData.total.toFixed(2)}`;
                         cartSummary.style.display = 'flex';
+
+                        const checkoutBtn = document.getElementById('checkout-btn');
+                        if (checkoutBtn) {
+                            checkoutBtn.onclick = () => this.proceedToCheckout();
+                        }
                     }
                 }
             }
@@ -454,51 +692,244 @@ class UserDashboard {
 
     async proceedToCheckout() {
         try {
+            console.log('Proceed to checkout clicked');
+        // First, check if cart has items
+        const sessionToken = localStorage.getItem('sessionToken');
+        const response = await fetch('/api/cart', {
+            headers: {
+                'Authorization': sessionToken
+            }
+        });
+
+        if (response.ok) {
+            const cartData = await response.json();
+            console.log('Cart data:', cartData);
+            
+            if (!cartData.items || cartData.items.length === 0) {
+                this.showAlert('Your cart is empty!', 'error');
+                return;
+            }
+
+            // Show checkout modal
+            this.showCheckoutModal();
+        } else {
+            this.showAlert('Failed to load cart data', 'error');
+        }
+    } catch (error) {
+        console.error('Checkout preparation error:', error);
+        this.showAlert('Error preparing checkout', 'error');
+    }
+}
+
+    showCheckoutModal() {
+        const modalHTML = `
+        <div id="checkout-modal" class="modal" style="display: block;">
+            <div class="modal-content" style="max-width: 500px;">
+                <div class="modal-header">
+                    <h2>Checkout</h2>
+                    <button class="close-modal">&times;</button>
+                </div>
+                <form id="checkout-form">
+                    <div class="form-group">
+                        <label for="checkout-phone">Phone Number (WhatsApp)</label>
+                        <input type="tel" id="checkout-phone" required 
+                            placeholder="+233 XX XXX XXXX"
+                            value="${this.currentUser.phone || ''}">
+                        <small style="color: var(--charcoal); font-size: 0.8rem;">
+                            ${this.currentUser.phone ? 'Prefilled from your profile' : 'Save this in your profile to pre-fill future orders'}
+                        </small>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="checkout-address">Shipping Address</label>
+                        <textarea id="checkout-address" required 
+                                placeholder="Enter your complete shipping address"
+                                rows="4">${this.currentUser.address || ''}</textarea>
+                        <small style="color: var(--charcoal); font-size: 0.8rem;">
+                            ${this.currentUser.address ? 'Prefilled from your profile' : 'Save your address in profile to avoid re-entering'}
+                        </small>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="checkout-notes">Order Notes (Optional)</label>
+                        <textarea id="checkout-notes" 
+                                placeholder="Any special instructions..."
+                                rows="3"></textarea>
+                    </div>
+                    
+                    <div class="checkout-summary">
+                        <h3>Order Summary</h3>
+                        <div id="checkout-items"></div>
+                        <div class="checkout-total">
+                            <strong>Total: <span id="checkout-total-amount">GH₵0.00</span></strong>
+                        </div>
+                    </div>
+                    
+                    <button type="submit" class="btn btn-primary btn-large">
+                        Place Order & Send WhatsApp
+                    </button>
+                </form>
+            </div>
+        </div>
+        `;
+        
+        // Remove existing modal
+        const existingModal = document.getElementById('checkout-modal');
+        if (existingModal) existingModal.remove();
+        
+        // Add new modal
+        document.body.insertAdjacentHTML('beforeend', modalHTML);
+        
+        // Load cart items into summary
+        this.loadCheckoutSummary();
+        
+        // Setup event listeners
+        this.setupCheckoutModalEvents();
+    }
+
+    async loadCheckoutSummary() {
+        try {
+            const sessionToken = localStorage.getItem('sessionToken');
+            const response = await fetch('/api/cart', {
+                headers: { 'Authorization': sessionToken }
+            });
+            
+            if (response.ok) {
+                const cartData = await response.json();
+                const itemsContainer = document.getElementById('checkout-items');
+                const totalAmount = document.getElementById('checkout-total-amount');
+                
+                itemsContainer.innerHTML = cartData.items.map(item => `
+                    <div class="checkout-item" style="display: flex; justify-content: space-between; margin-bottom: 8px;">
+                        <span>${item.name} × ${item.quantity}</span>
+                        <span>GH₵${(item.price * item.quantity).toFixed(2)}</span>
+                    </div>
+                `).join('');
+                
+                totalAmount.textContent = `GH₵${cartData.total.toFixed(2)}`;
+            }
+        } catch (error) {
+            console.error('Load checkout summary error:', error);
+        }
+    }
+
+    setupCheckoutModalEvents() {
+        const modal = document.getElementById('checkout-modal');
+        const form = document.getElementById('checkout-form');
+        const closeBtn = modal.querySelector('.close-modal');
+        
+        // Close modal
+        closeBtn.addEventListener('click', () => modal.remove());
+        modal.addEventListener('click', (e) => {
+            if (e.target === modal) modal.remove();
+        });
+        
+        // Form submission
+        form.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            await this.processCheckout();
+        });
+    }
+
+    async processCheckout() {
+        const phone = document.getElementById('checkout-phone').value;
+        const address = document.getElementById('checkout-address').value;
+        const notes = document.getElementById('checkout-notes').value;
+        
+        if (!phone || !address) {
+            this.showAlert('Phone and shipping address are required', 'error');
+            return;
+        }
+        
+        try {
             const sessionToken = localStorage.getItem('sessionToken');
             const response = await fetch('/api/checkout', {
                 method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': sessionToken
+                },
+                body: JSON.stringify({
+                    phone: phone,
+                    shipping_address: address,
+                    customer_notes: notes
+                })
+            });
+            
+            if (response.ok) {
+                const result = await response.json();
+                this.showAlert(`Order placed successfully! ${result.notification}`, 'success');
+                
+                // Close modal
+                document.getElementById('checkout-modal').remove();
+                
+                // Reload cart and orders
+                this.loadCart();
+                this.loadOrders();
+                
+                // Update main app counts
+                if (window.app) {
+                    window.app.updateCartCount();
+                }
+            } else {
+                const error = await response.json();
+                this.showAlert(error.error || 'Checkout failed', 'error');
+            }
+        } catch (error) {
+            console.error('Checkout error:', error);
+            this.showAlert('Checkout failed', 'error');
+        }
+    }
+
+
+    async updateCartCount() {
+        try {
+            const sessionToken = localStorage.getItem('sessionToken');
+            const response = await fetch('/api/cart', {
                 headers: {
                     'Authorization': sessionToken
                 }
             });
 
             if (response.ok) {
-                const data = await response.json();
-                this.showAlert('Order placed successfully!', 'success');
+                const cartData = await response.json();
                 
-                // Clear cart and reload
-                this.loadCart();
-                this.loadOrders();
+                // Update ALL cart count elements
+                document.querySelectorAll('.cart-count, .cart-count-badge').forEach(el => {
+                    el.textContent = cartData.item_count || '0';
+                });
                 
-                // Redirect to order confirmation if needed
-                if (data.order_id) {
-                    setTimeout(() => {
-                        this.viewOrder(data.order_id);
-                    }, 2000);
-                }
-            } else {
-                this.showAlert('Checkout failed. Please try again.', 'error');
+                console.log(`🛒 Cart count updated to: ${cartData.item_count}`);
             }
         } catch (error) {
-            console.error('Checkout error:', error);
-            this.showAlert('Error during checkout', 'error');
+            console.error('Update cart count error:', error);
         }
-    }
-
-    loadProfile() {
-        // Profile is already loaded in updateUserUI()
-        console.log('Profile section loaded');
     }
 
     async removeFromWishlist(productId) {
         try {
-            // Simulate API call - replace with actual API
-            this.showAlert('Product removed from wishlist', 'success');
-            this.loadWishlist(); // Reload to show updated list
-            
-            // Update main app wishlist count if available
-            if (window.app) {
-                window.app.updateWishlistCount();
+            const sessionToken = localStorage.getItem('sessionToken');
+            const response = await fetch(`/api/wishlist/${productId}`, {
+                method: 'DELETE',
+                headers: {
+                    'Authorization': sessionToken
+                }
+            });
+
+            if (response.ok) {
+                // Update wishlist count immediately
+                await this.updateWishlistCount();
+
+                this.showAlert('Product removed from wishlist', 'success');
+                this.loadWishlist(); // Reload to show updated list
+                
+                // Update main app wishlist count
+                //if (window.app) {
+                    //window.app.updateWishlistCount();
+                //}
+            } else {
+                const error = await response.json();
+                this.showAlert(error.error || 'Error removing from wishlist', 'error');
             }
         } catch (error) {
             console.error('Remove from wishlist error:', error);
@@ -512,13 +943,31 @@ class UserDashboard {
         }
 
         try {
-            // Simulate API call - replace with actual API
-            this.showAlert('Wishlist cleared successfully', 'success');
-            this.wishlistItems = [];
-            this.loadWishlist();
+            const sessionToken = localStorage.getItem('sessionToken');
+            console.log('🗑️ Clearing entire wishlist...');
             
-            if (window.app) {
-                window.app.updateWishlistCount();
+            const response = await fetch('/api/wishlist/clear', {
+                method: 'POST',
+                headers: {
+                    'Authorization': sessionToken
+                }
+            });
+
+            if (response.ok) {
+                const result = await response.json();
+                console.log('✅ Wishlist cleared:', result);
+                
+                this.showAlert(`Wishlist cleared! Removed ${result.deleted_count} items.`, 'success');
+                this.loadWishlist(); // Reload to show empty state
+                
+                // Update main app wishlist count
+                if (window.app) {
+                    window.app.updateWishlistCount();
+                }
+            } else {
+                const error = await response.json();
+                console.error('❌ Clear wishlist failed:', error);
+                this.showAlert(error.error || 'Failed to clear wishlist', 'error');
             }
         } catch (error) {
             console.error('Clear wishlist error:', error);
@@ -526,12 +975,64 @@ class UserDashboard {
         }
     }
 
+    async updateWishlistCount() {
+        try {
+            const sessionToken = localStorage.getItem('sessionToken');
+            const response = await fetch('/api/wishlist', {
+                headers: {
+                    'Authorization': sessionToken
+                }
+            });
+
+            if (response.ok) {
+                const wishlistItems = await response.json();
+                
+                // Update ALL wishlist count elements
+                document.querySelectorAll('.wishlist-count, .wishlist-count-badge').forEach(el => {
+                    el.textContent = wishlistItems.length || '0';
+                });
+                
+                console.log(`❤️ Wishlist count updated to: ${wishlistItems.length}`);
+            }
+        } catch (error) {
+            console.error('Update wishlist count error:', error);
+        }
+    }
+
     async moveToCart(productId) {
         try {
-            // Simulate moving to cart
-            this.showAlert('Product moved to cart', 'success');
-            await this.removeFromWishlist(productId);
-            this.loadCart(); // Reload cart to show the moved item
+            const sessionToken = localStorage.getItem('sessionToken');
+        
+            // First add to cart
+            const cartResponse = await fetch('/api/cart', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': sessionToken
+                },
+                body: JSON.stringify({
+                    product_id: productId,
+                    quantity: 1
+                })
+            });
+
+            if (cartResponse.ok) {
+
+                // Update cart count immediately
+                await this.updateCartCount();
+                
+                // Then remove from wishlist
+                await this.removeFromWishlist(productId);
+                this.showAlert('Product moved to cart', 'success');
+
+                // Reload both cart and wishlist to reflect changes
+                //this.loadCart();
+                //this.loadWishlist();
+
+            } else {
+                const error = await cartResponse.json();
+                this.showAlert(error.error || 'Error moving to cart', 'error');
+            }
         } catch (error) {
             console.error('Move to cart error:', error);
             this.showAlert('Error moving product to cart', 'error');
@@ -540,13 +1041,25 @@ class UserDashboard {
 
     async removeFromCart(productId) {
         try {
-            // Simulate API call - replace with actual API
-            this.showAlert('Product removed from cart', 'success');
-            this.loadCart(); // Reload to show updated cart
-            
-            // Update main app cart count if available
-            if (window.app) {
-                window.app.updateCartCount();
+            const sessionToken = localStorage.getItem('sessionToken');
+            const response = await fetch(`/api/cart/${productId}`, {
+                method: 'DELETE',
+                headers: {
+                    'Authorization': sessionToken
+                }
+            });
+
+            if (response.ok) {
+                this.showAlert('Product removed from cart', 'success');
+                this.loadCart(); // Reload to show updated cart
+                
+                // Update main app cart count
+                if (window.app) {
+                    window.app.updateCartCount();
+                }
+            } else {
+                const error = await response.json();
+                this.showAlert(error.error || 'Error removing from cart', 'error');
             }
         } catch (error) {
             console.error('Remove from cart error:', error);
@@ -561,12 +1074,29 @@ class UserDashboard {
         }
 
         try {
-            // Simulate API call - replace with actual API
-            this.showAlert('Quantity updated', 'success');
-            this.loadCart(); // Reload to show updated quantities
-            
-            if (window.app) {
-                window.app.updateCartCount();
+            const sessionToken = localStorage.getItem('sessionToken');
+            const response = await fetch(`/api/cart/${productId}`, {
+                method: 'PUT',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': sessionToken
+                },
+                body: JSON.stringify({
+                    quantity: newQuantity
+                })
+            });
+
+            if (response.ok) {
+                this.showAlert('Quantity updated', 'success');
+                this.loadCart(); // Reload to show updated quantities
+                
+                // Update main app cart count
+                if (window.app) {
+                    window.app.updateCartCount();
+                }
+            } else {
+                const error = await response.json();
+                this.showAlert(error.error || 'Error updating quantity', 'error');
             }
         } catch (error) {
             console.error('Update cart quantity error:', error);
@@ -574,19 +1104,8 @@ class UserDashboard {
         }
     }
 
-    proceedToCheckout() {
-        // Simulate checkout process
-        this.showAlert('Proceeding to checkout...', 'info');
-        // In a real app, this would redirect to checkout page
-        setTimeout(() => {
-            this.showAlert('Checkout functionality would be implemented here!', 'success');
-        }, 1000);
-    }
 
-    viewOrder(orderId) {
-        this.showAlert(`Viewing order details for order #${orderId}`, 'info');
-        // Implement order details view modal or page
-    }
+
 
     logout() {
         localStorage.removeItem('sessionToken');
