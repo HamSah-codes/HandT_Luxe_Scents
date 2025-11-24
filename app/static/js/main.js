@@ -1,1188 +1,712 @@
-// Initialize new navigation
-function setupNewNavigation() {
-    setupMobileMenu();
-    setupAccountDropdown();
-    setupEnhancedSearch();
-    updateAccountDisplay();
-}
-
-// Mobile menu functionality
-function setupMobileMenu() {
-    const hamburger = document.querySelector('.hamburger');
-    const mobileOverlay = document.querySelector('.mobile-menu-overlay');
-    const closeMobileMenu = document.querySelector('.close-mobile-menu');
-
-    if (hamburger && mobileOverlay) {
-        hamburger.addEventListener('click', () => {
-            mobileOverlay.classList.add('active');
-            document.body.style.overflow = 'hidden';
-        });
+// Main Application JavaScript
+class HTLuxeScents {
+    constructor() {
+        this.currentUser = null;
+        this.init();
     }
 
-    if (closeMobileMenu && mobileOverlay) {
-        closeMobileMenu.addEventListener('click', () => {
-            mobileOverlay.classList.remove('active');
-            document.body.style.overflow = '';
-        });
+    async init() {
+        await this.checkAuth();
+        this.setupBanner();
+        this.setupNavigation();
+        this.setupMobileMenu();
+        this.setupModals();
+        this.setupEventListeners();
+        this.updateCartCount();
+        this.updateWishlistCount();
     }
 
-    // Close mobile menu when clicking on links
-    const mobileLinks = document.querySelectorAll('.mobile-menu-link');
-    mobileLinks.forEach(link => {
-        link.addEventListener('click', () => {
-            mobileOverlay.classList.remove('active');
-            document.body.style.overflow = '';
-        });
-    });
-
-    // Close mobile menu when clicking outside
-    if (mobileOverlay) {
-        mobileOverlay.addEventListener('click', (e) => {
-            if (e.target === mobileOverlay) {
-                mobileOverlay.classList.remove('active');
-                document.body.style.overflow = '';
-            }
-        });
-    }
-}
-
-// Account dropdown functionality
-function setupAccountDropdown() {
-    const accountToggle = document.getElementById('account-toggle');
-    const accountMenu = document.querySelector('.account-menu');
-
-    if (accountToggle && accountMenu) {
-        // Populate account menu based on login state
-        updateAccountMenu();
-        
-        // Toggle menu on click (for mobile)
-        accountToggle.addEventListener('click', (e) => {
-            e.stopPropagation();
-            accountMenu.classList.toggle('active');
-        });
-
-        // Close menu when clicking outside
-        document.addEventListener('click', () => {
-            accountMenu.classList.remove('active');
-        });
-
-        // Prevent menu from closing when clicking inside
-        accountMenu.addEventListener('click', (e) => {
-            e.stopPropagation();
-        });
-    }
-}
-
-// Update account menu content based on login state
-function updateAccountMenu() {
-    const accountMenu = document.querySelector('.account-menu');
-    const currentUser = JSON.parse(localStorage.getItem('currentUser') || 'null');
-
-    if (accountMenu) {
-        if (currentUser) {
-            // User is logged in
-            accountMenu.innerHTML = `
-                <div class="account-menu-header" style="padding: 12px 20px; border-bottom: 1px solid var(--light-gray); margin-bottom: 8px;">
-                    <div style="font-weight: 600; color: var(--navy);">Hi, ${currentUser.fullName}</div>
-                    <div style="font-size: 0.8rem; color: var(--charcoal);">${currentUser.email}</div>
-                </div>
-                <a href="user-interface.html" class="account-menu-item">
-                    <i class="fas fa-user" style="margin-right: 8px;"></i>
-                    My Account
-                </a>
-                <a href="#orders" class="account-menu-item">
-                    <i class="fas fa-box" style="margin-right: 8px;"></i>
-                    Orders
-                </a>
-                <a href="#wishlist" class="account-menu-item">
-                    <i class="fas fa-heart" style="margin-right: 8px;"></i>
-                    Wishlist
-                </a>
-                <div class="account-menu-divider"></div>
-                <a href="#" class="account-menu-item" id="logout-menu-item">
-                    <i class="fas fa-sign-out-alt" style="margin-right: 8px;"></i>
-                    Logout
-                </a>
-            `;
-
-            // Add logout functionality
-            const logoutItem = document.getElementById('logout-menu-item');
-            if (logoutItem) {
-                logoutItem.addEventListener('click', (e) => {
-                    e.preventDefault();
-                    logoutUser();
-                });
-            }
-        } else {
-            // User is not logged in
-            accountMenu.innerHTML = `
-                <a href="#" class="account-menu-item" id="login-menu-item">
-                    <i class="fas fa-sign-in-alt" style="margin-right: 8px;"></i>
-                    Sign In
-                </a>
-                <a href="#" class="account-menu-item" id="signup-menu-item">
-                    <i class="fas fa-user-plus" style="margin-right: 8px;"></i>
-                    Create Account
-                </a>
-                <div class="account-menu-divider"></div>
-                <a href="#orders" class="account-menu-item">
-                    <i class="fas fa-box" style="margin-right: 8px;"></i>
-                    Orders
-                </a>
-                <a href="#wishlist" class="account-menu-item">
-                    <i class="fas fa-heart" style="margin-right: 8px;"></i>
-                    Wishlist
-                </a>
-            `;
-
-            // Add login/signup functionality
-            const loginItem = document.getElementById('login-menu-item');
-            const signupItem = document.getElementById('signup-menu-item');
-
-            if (loginItem) {
-                loginItem.addEventListener('click', (e) => {
-                    e.preventDefault();
-                    document.getElementById('login-modal').style.display = 'block';
-                    accountMenu.classList.remove('active');
-                });
-            }
-
-            if (signupItem) {
-                signupItem.addEventListener('click', (e) => {
-                    e.preventDefault();
-                    document.getElementById('signup-modal').style.display = 'block';
-                    accountMenu.classList.remove('active');
-                });
-            }
-        }
-    }
-}
-
-// Update account display text
-function updateAccountDisplay() {
-    const accountText = document.getElementById('account-text');
-    const currentUser = JSON.parse(localStorage.getItem('currentUser') || 'null');
-
-    if (accountText) {
-        if (currentUser) {
-            accountText.textContent = `Hi, ${currentUser.fullName.split(' ')[0]}`;
-        } else {
-            accountText.textContent = 'Account';
-        }
-    }
-}
-
-// Enhanced search functionality
-function setupEnhancedSearch() {
-    const searchInput = document.querySelector('.search-input');
-    const searchBtn = document.querySelector('.search-btn');
-    let suggestionsContainer = null;
-
-    if (searchInput && searchBtn) {
-        // Create suggestions container
-        suggestionsContainer = document.createElement('div');
-        suggestionsContainer.className = 'search-suggestions';
-        searchInput.parentNode.appendChild(suggestionsContainer);
-
-        const performSearch = () => {
-            const searchTerm = searchInput.value.trim().toLowerCase();
-            if (searchTerm) {
-                // Search in featured products
-                const searchResults = searchProducts(searchTerm, featuredProducts);
-                
-                if (searchResults.length > 0) {
-                    showAlert(`Found ${searchResults.length} product(s) for: "${searchTerm}"`, 'success');
-                    // You can implement displaying search results here
-                    console.log('Search results:', searchResults);
-                } else {
-                    showAlert(`No products found for: "${searchTerm}"`, 'info');
-                }
-                
-                // Clear search input and suggestions
-                searchInput.value = '';
-                hideSuggestions();
-            }
-        };
-
-        // Real-time search suggestions
-        searchInput.addEventListener('input', (e) => {
-            const searchTerm = e.target.value.trim().toLowerCase();
-            if (searchTerm.length > 0) {
-                showSuggestions(searchTerm);
-            } else {
-                hideSuggestions();
-            }
-        });
-
-        // Search button click
-        searchBtn.addEventListener('click', performSearch);
-        
-        // Enter key search
-        searchInput.addEventListener('keypress', (e) => {
-            if (e.key === 'Enter') {
-                performSearch();
-            }
-        });
-
-        // Hide suggestions when clicking outside
-        document.addEventListener('click', (e) => {
-            if (!searchInput.contains(e.target) && (!suggestionsContainer || !suggestionsContainer.contains(e.target))) {
-                hideSuggestions();
-            }
-        });
-    }
-}
-
-// Search products function
-function searchProducts(searchTerm, products) {
-    return products.filter(product => {
-        const productName = product.name.toLowerCase();
-        const productBrand = product.brand.toLowerCase();
-        const productCategory = product.category.toLowerCase();
-        const productScent = product.scent.toLowerCase();
-        
-        return productName.includes(searchTerm) ||
-               productBrand.includes(searchTerm) ||
-               productCategory.includes(searchTerm) ||
-               productScent.includes(searchTerm);
-    });
-}
-
-// Show search suggestions
-function showSuggestions(searchTerm) {
-    const suggestionsContainer = document.querySelector('.search-suggestions');
-    if (!suggestionsContainer) return;
-
-    // Search in both featured products and all products for comprehensive suggestions
-    const allProducts = [...featuredProducts, ...allProducts || []];
-    const suggestions = searchProducts(searchTerm, allProducts).slice(0, 5); // Limit to 5 suggestions
-
-    if (suggestions.length > 0) {
-        suggestionsContainer.innerHTML = suggestions.map(product => `
-            <div class="suggestion-item" data-product-id="${product.id}">
-                <img src="${product.image}" alt="${product.name}" class="suggestion-image">
-                <div class="suggestion-info">
-                    <div class="suggestion-name">${product.name}</div>
-                    <div class="suggestion-brand">${product.brand}</div>
-                    <div class="suggestion-price">GH₵${product.price}</div>
-                </div>
-            </div>
-        `).join('');
-
-        suggestionsContainer.style.display = 'block';
-
-        // Add click event to suggestions
-        suggestionsContainer.querySelectorAll('.suggestion-item').forEach(item => {
-            item.addEventListener('click', () => {
-                const productId = item.getAttribute('data-product-id');
-                const searchInput = document.querySelector('.search-input');
-                const product = allProducts.find(p => p.id == productId);
-                
-                if (product) {
-                    searchInput.value = product.name;
-                    hideSuggestions();
-                    // Optionally trigger search or redirect to product page
-                    showAlert(`Selected: ${product.name}`, 'info');
-                }
-            });
-        });
-    } else {
-        hideSuggestions();
-    }
-}
-
-// Hide search suggestions
-function hideSuggestions() {
-    const suggestionsContainer = document.querySelector('.search-suggestions');
-    if (suggestionsContainer) {
-        suggestionsContainer.style.display = 'none';
-    }
-}
-
-// Shop Now button handler
-function handleShopNowClick() {
-    // If user is on index page, redirect to shop page
-    if (window.location.pathname.includes('index.html') || window.location.pathname === '/') {
-        window.location.href = 'shop.html';
-    }
-}
-
-// ==================== FEATURED PRODUCTS ====================
-
-// Featured Products Data 
-const featuredProducts = [
-    {
-        id: 1,
-        name: "Oud Nior",
-        brand: "Khadlaj",
-        price: 240.00,
-        image: "/static/assets/img/OUD_NIOR.jpeg",
-        category: "men",
-        scent: "woody",
-        mood: "confident",
-        season: "winter"
-    },
-    {
-        id: 2,
-        name: "Matelot",
-        brand: "Fragrance World",
-        price: 150.00,
-        image: "/static/assets/img/MATELOT.jpeg",
-        category: "men",
-        scent: "floral",
-        mood: "romantic",
-        season: "spring"
-    },
-    {
-        id: 3,
-        name: "Malaki Secret",
-        brand: "Sahari",
-        price: 160.00,
-        image: "/static/assets/img/MALAKI_SECRET.jpeg",
-        category: "women",
-        scent: "citrus",
-        mood: "energetic",
-        season: "summer"
-    },
-    {
-        id: 4,
-        name: "Hayaati Rose",
-        brand: "Fragrance World",
-        price: 160.00,
-        image: "/static/assets/img/HAYAATI_ROSE.jpeg",
-        category: "men",
-        scent: "woody",
-        mood: "calm",
-        season: "autumn"
-    }
-];
-
-// Display Featured Products
-function displayFeaturedProducts() {
-    const productsGrid = document.getElementById('featured-products');
-    
-    if (productsGrid) {
-        featuredProducts.forEach(product => {
-            const productCard = document.createElement('div');
-            productCard.className = 'product-card';
-            
-            productCard.innerHTML = `
-                <div class="product-image">
-                    <img src="${product.image}" alt="${product.name}">
-                </div>
-                <div class="product-info">
-                    <h3 class="product-name">${product.name}</h3>
-                    <p class="product-brand">${product.brand}</p>
-                    <p class="product-price">GH₵${product.price}</p>
-                    <div class="product-actions">
-                        <button class="btn btn-primary add-to-cart" data-id="${product.id}">Add to Cart</button>
-                        <button class="btn btn-secondary add-to-wishlist" data-id="${product.id}">
-                            <i class="far fa-heart"></i>
-                        </button>
-                    </div>
-                </div>
-            `;
-            
-            productsGrid.appendChild(productCard);
-        });
-        
-        // Add event listeners for buttons
-        document.querySelectorAll('.add-to-cart').forEach(button => {
-            button.addEventListener('click', addToCart);
-        });
-        
-        document.querySelectorAll('.add-to-wishlist').forEach(button => {
-            button.addEventListener('click', addToWishlist);
-        });
-    }
-}
-
-// Add to Cart Functionality
-function addToCart(e) {
-    const productId = e.target.getAttribute('data-id');
-    const product = featuredProducts.find(p => p.id == productId);
-    
-    if (product) {
-        // Get current cart from localStorage
-        let cart = JSON.parse(localStorage.getItem('cart')) || [];
-        
-        // Check if product already in cart
-        const existingItem = cart.find(item => item.id === productId);
-        
-        if (existingItem) {
-            existingItem.quantity += 1;
-        } else {
-            cart.push({
-                ...product,
-                quantity: 1
-            });
-        }
-        
-        // Save back to localStorage
-        localStorage.setItem('cart', JSON.stringify(cart));
-        
-        // Update cart count
-        updateCartCount();
-        
-        showAlert(`Added ${product.name} to cart!`, 'success');
-    }
-}
-
-// Add to Wishlist Functionality
-function addToWishlist(e) {
-    const productId = e.target.closest('.add-to-wishlist').getAttribute('data-id');
-    const product = featuredProducts.find(p => p.id == productId);
-    const heartIcon = e.target.closest('.add-to-wishlist').querySelector('i');
-    
-    // Get current wishlist from localStorage
-    let wishlist = JSON.parse(localStorage.getItem('wishlist')) || [];
-    
-    // Check if product already in wishlist
-    const existingItem = wishlist.find(item => item.id === productId);
-    
-    if (!existingItem) {
-        wishlist.push(product);
-        localStorage.setItem('wishlist', JSON.stringify(wishlist));
-        heartIcon.classList.remove('far');
-        heartIcon.classList.add('fas');
-        showAlert(`Added ${product.name} to wishlist!`, 'success');
-    } else {
-        wishlist = wishlist.filter(item => item.id !== productId);
-        localStorage.setItem('wishlist', JSON.stringify(wishlist));
-        heartIcon.classList.remove('fas');
-        heartIcon.classList.add('far');
-        showAlert(`Removed ${product.name} from wishlist!`, 'info');
-    }
-    
-    updateWishlistCount();
-}
-
-// Update Cart Count
-function updateCartCount() {
-    const cart = JSON.parse(localStorage.getItem('cart')) || [];
-    const totalItems = cart.reduce((sum, item) => sum + item.quantity, 0);
-    
-    // Update all cart count elements
-    document.querySelectorAll('#cart-count').forEach(element => {
-        element.textContent = totalItems;
-    });
-}
-
-// Update Wishlist Count
-function updateWishlistCount() {
-    const wishlist = JSON.parse(localStorage.getItem('wishlist')) || [];
-    
-    // Update all wishlist count elements
-    document.querySelectorAll('#wishlist-count').forEach(element => {
-        element.textContent = wishlist.length;
-    });
-}
-
-// Initialize counts on page load
-function initializeCounts() {
-    updateCartCount();
-    updateWishlistCount();
-}
-
-// Contact Form Submission
-const messageForm = document.getElementById('message-form');
-if (messageForm) {
-    messageForm.addEventListener('submit', function(e) {
-        e.preventDefault();
-        
-        const name = document.getElementById('name').value;
-        const email = document.getElementById('email').value;
-        const message = document.getElementById('message').value;
-        
-        showAlert(`Thank you for your message, ${name}! We'll get back to you soon.`, 'success');
-        
-        // Reset form
-        this.reset();
-    });
-}
-
-
-// Basic authentication for home page
-function setupHomeAuth() {
-    const loginBtn = document.getElementById('login-btn');
-    const signupBtn = document.getElementById('signup-btn');
-    const myAccountBtn = document.querySelector('.icon-link[title="My Account"]');
-    const modals = document.querySelectorAll('.modal');
-    const closeButtons = document.querySelectorAll('.close-modal');
-
-    // Login modal
-    if (loginBtn) {
-        loginBtn.addEventListener('click', (e) => {
-            e.preventDefault();
-            document.getElementById('login-modal').style.display = 'block';
-        });
-    }
-
-    // Signup modal
-    if (signupBtn) {
-        signupBtn.addEventListener('click', (e) => {
-            e.preventDefault();
-            document.getElementById('signup-modal').style.display = 'block';
-        });
-    }
-
-    // My Account icon
-    if (myAccountBtn) {
-        myAccountBtn.addEventListener('click', (e) => {
-            e.preventDefault();
-            const currentUser = localStorage.getItem('currentUser');
-            if (currentUser) {
-                window.location.href = 'user-interface.html';
-            } else {
-                document.getElementById('login-modal').style.display = 'block';
-            }
-        });
-    }
-
-    // Close modals
-    closeButtons.forEach(button => {
-        button.addEventListener('click', () => {
-            modals.forEach(modal => {
-                modal.style.display = 'none';
-            });
-        });
-    });
-
-    // Close modal when clicking outside
-    modals.forEach(modal => {
-        modal.addEventListener('click', (e) => {
-            if (e.target === modal) {
-                modal.style.display = 'none';
-            }
-        });
-    });
-
- // ========== FORM SUBMISSION HANDLERS ==========
-    // Form submission handlers for home page
-    const loginForm = document.getElementById('login-form');
-    const signupForm = document.getElementById('signup-form');
-
-    if (loginForm) {
-        loginForm.addEventListener('submit', handleHomeLogin);
-    }
-
-    if (signupForm) {
-        signupForm.addEventListener('submit', handleHomeSignup);
-    }
-   
-
-     // Real-time password validation
-    const confirmPasswordInput = document.getElementById('signup-confirm-password');
-    if (confirmPasswordInput) {
-        confirmPasswordInput.addEventListener('input', validatePasswordMatch);
-    }
-}
-
-
-// Home page login handler
-async function handleHomeLogin(e) {
-    e.preventDefault();
-    
-    const email = document.getElementById('login-email').value.trim();
-    const password = document.getElementById('login-password').value;
-
-    if (!email || !password) {
-        showAlert('Please fill in all fields', 'error');
-        return;
-    }
-
-    try {
-        const response = await fetch('/api/auth/login', {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-            },
-            body: JSON.stringify({ email, password })
-        });
-
-        const data = await response.json();
-
-        if (response.ok) {
-            // Store session token and user data
-            localStorage.setItem('sessionToken', data.sessionToken);
-            localStorage.setItem('currentUser', JSON.stringify(data.user));
-            
-            // Login successful
-            showAlert(`Welcome back, ${data.user.fullName}!`, 'success');
-            document.getElementById('login-modal').style.display = 'none';
-            e.target.reset();
-            
-            updateAuthUI();
-            
-            // Redirect to dashboard if we're on home page
-            if (window.location.pathname.includes('index.html')) {
+    // Authentication Methods
+    async checkAuth() {
+        const sessionToken = localStorage.getItem('sessionToken');
+        if (sessionToken) {
+            try {
+                // For demo purposes - simulate user data
+                // Replace with actual API call in production
                 setTimeout(() => {
-                    window.location.href = 'user-interface.html';
-                }, 1000);
+                    this.currentUser = {
+                        id: 1,
+                        fullName: 'Demo User',
+                        email: 'demo@htluxescents.com',
+                        username: 'demo'
+                    };
+                    this.updateAuthUI();
+                }, 500);
+                
+                /* Actual API call would be:
+                const response = await fetch('/api/auth/me', {
+                    headers: {
+                        'Authorization': sessionToken
+                    }
+                });
+                
+                if (response.ok) {
+                    const data = await response.json();
+                    this.currentUser = data.user;
+                    this.updateAuthUI();
+                } else {
+                    localStorage.removeItem('sessionToken');
+                }
+                */
+            } catch (error) {
+                console.error('Auth check failed:', error);
+                localStorage.removeItem('sessionToken');
             }
         } else {
-            showAlert(data.error, 'error');
+            this.updateAuthUI();
         }
-    } catch (error) {
-        showAlert('Login failed. Please try again.', 'error');
-    }
-}
-
-// Home page signup handler
-async function handleHomeSignup(e) {
-    e.preventDefault();
-    
-    const fullName = document.getElementById('signup-name').value.trim();
-    const email = document.getElementById('signup-email').value.trim().toLowerCase();
-    const password = document.getElementById('signup-password').value;
-    const confirmPassword = document.getElementById('signup-confirm-password').value;
-
-    // Validation
-    if (!fullName || !email || !password || !confirmPassword) {
-        showAlert('Please fill in all fields', 'error');
-        return;
     }
 
-    // Email validation
-    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-    if (!emailRegex.test(email)) {
-        showAlert('Please enter a valid email address', 'error');
-        return;
-    }
-
-    // Password validation
-    if (password.length < 6) {
-        showAlert('Password must be at least 6 characters', 'error');
-        return;
-    }
-
-    // Password match validation
-    if (password !== confirmPassword) {
-        showAlert('Passwords do not match', 'error');
-        return;
-    }
-
-    try {
-        const response = await fetch('/api/auth/signup', {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-            },
-            body: JSON.stringify({ fullName, email, password })
-        });
-
-        const data = await response.json();
-
-        if (response.ok) {
-            // Store session token and user data
-            localStorage.setItem('sessionToken', data.sessionToken);
-            localStorage.setItem('currentUser', JSON.stringify(data.user));
-            
-            // Signup successful
-            showAlert(`Account created successfully! Welcome, ${data.user.fullName}!`, 'success');
-            document.getElementById('signup-modal').style.display = 'none';
-            e.target.reset();
-            
-            updateAuthUI();
-            
-            // Clear password match error
-            const errorElement = document.getElementById('password-match-error');
-            if (errorElement) {
-                errorElement.style.display = 'none';
-            }
-            
-            // Redirect to dashboard
-            setTimeout(() => {
-                window.location.href = 'user-interface.html';
-            }, 1000);
-        } else {
-            showAlert(data.error, 'error');
-        }
-    } catch (error) {
-        showAlert('Signup failed. Please try again.', 'error');
-    }
-}
-
-// Update auth UI for home page
-function updateAuthUI() {
-    const authLinks = document.querySelector('.auth-links');
-    const currentUser = localStorage.getItem('currentUser');
-    
-    if (authLinks && currentUser) {
-        const user = JSON.parse(currentUser);
-        authLinks.innerHTML = `
-            <span style="color: var(--silver); font-weight: 600;">Welcome, ${user.fullName}</span>
-            <span class="auth-separator">|</span>
-            <a href="#" class="auth-link" id="logout-btn">Logout</a>
-        `;
+    updateAuthUI() {
+        const accountText = document.getElementById('account-text');
+        const accountMenu = document.querySelector('.account-menu');
         
-        // Add logout event listener
-        const logoutBtn = document.getElementById('logout-btn');
-        if (logoutBtn) {
-            logoutBtn.addEventListener('click', (e) => {
+        if (this.currentUser) {
+            if (accountText) {
+                accountText.textContent = `Hi, ${this.currentUser.fullName.split(' ')[0]}`;
+            }
+            
+            if (accountMenu) {
+                accountMenu.innerHTML = `
+                    <div class="account-menu-header" style="padding: 12px 20px; border-bottom: 1px solid var(--light-gray); margin-bottom: 8px;">
+                        <div style="font-weight: 600; color: var(--navy);">${this.currentUser.fullName}</div>
+                        <div style="font-size: 0.8rem; color: var(--charcoal);">${this.currentUser.email}</div>
+                    </div>
+                    <a href="/user-interface.html" class="account-menu-item">
+                        <i class="fas fa-user"></i>
+                        My Account
+                    </a>
+                    <a href="/user-interface.html#orders" class="account-menu-item">
+                        <i class="fas fa-box"></i>
+                        Orders
+                    </a>
+                    <a href="/user-interface.html#wishlist" class="account-menu-item">
+                        <i class="fas fa-heart"></i>
+                        Wishlist
+                    </a>
+                    <div class="account-menu-divider"></div>
+                    <a href="#" class="account-menu-item" id="logout-menu-item">
+                        <i class="fas fa-sign-out-alt"></i>
+                        Logout
+                    </a>
+                `;
+                
+                // Add logout event listener
+                const logoutItem = document.getElementById('logout-menu-item');
+                if (logoutItem) {
+                    logoutItem.addEventListener('click', (e) => {
+                        e.preventDefault();
+                        this.logout();
+                    });
+                }
+            }
+        } else {
+            if (accountText) {
+                accountText.textContent = 'Account';
+            }
+            
+            if (accountMenu) {
+                accountMenu.innerHTML = `
+                    <a href="#" class="account-menu-item" id="login-menu-item">
+                        <i class="fas fa-sign-in-alt"></i>
+                        Sign In
+                    </a>
+                    <a href="#" class="account-menu-item" id="signup-menu-item">
+                        <i class="fas fa-user-plus"></i>
+                        Create Account
+                    </a>
+                    <div class="account-menu-divider"></div>
+                    <a href="/user-interface.html#orders" class="account-menu-item">
+                        <i class="fas fa-box"></i>
+                        Orders
+                    </a>
+                    <a href="/user-interface.html#wishlist" class="account-menu-item">
+                        <i class="fas fa-heart"></i>
+                        Wishlist
+                    </a>
+                `;
+                
+                // Add event listeners for login/signup
+                const loginItem = document.getElementById('login-menu-item');
+                const signupItem = document.getElementById('signup-menu-item');
+                
+                if (loginItem) {
+                    loginItem.addEventListener('click', (e) => {
+                        e.preventDefault();
+                        this.showModal('login-modal');
+                    });
+                }
+                
+                if (signupItem) {
+                    signupItem.addEventListener('click', (e) => {
+                        e.preventDefault();
+                        this.showModal('signup-modal');
+                    });
+                }
+            }
+        }
+    }
+
+    // Banner Setup
+    setupBanner() {
+        const callBtn = document.querySelector('.call-now-btn');
+        if (callBtn) {
+            callBtn.addEventListener('click', (e) => {
                 e.preventDefault();
-                localStorage.removeItem('currentUser');
-                updateAuthUI();
-                showAlert('Logged out successfully', 'success');
-                location.reload();
+                // This will trigger the phone call on mobile devices
+                window.location.href = 'tel:+233591373371';
             });
         }
     }
 
-     // Also update the account dropdown
-    updateAccountMenu();
-    updateAccountDisplay();
-}
-
- // Add forgot password functionality
-function setupForgotPassword() {
-    const forgotPasswordLink = document.getElementById('forgot-password-link');
-    
-    if (forgotPasswordLink) {
-        forgotPasswordLink.addEventListener('click', (e) => {
-            e.preventDefault();
-            document.getElementById('login-modal').style.display = 'none';
-            document.getElementById('forgot-password-modal').style.display = 'block';
-        });
-    }
-    
-    // Forgot password link
-    if (forgotPasswordLink) {
-        forgotPasswordLink.addEventListener('click', (e) => {
-            e.preventDefault();
-            document.getElementById('login-modal').style.display = 'none';
-            document.getElementById('forgot-password-modal').style.display = 'block';
-        });
-    }
-
-    // Forgot password form - step 1: enter email
-    if (forgotPasswordForm) {
-        forgotPasswordForm.addEventListener('submit', async (e) => {
-            e.preventDefault();
-            const email = document.getElementById('reset-email').value.trim();
+    // Mobile Menu Setup
+    setupMobileMenu() {
+        const mobileMenuBtn = document.querySelector('.mobile-menu-btn');
+        const navMenu = document.querySelector('.nav-menu');
+        
+        if (mobileMenuBtn && navMenu) {
+            mobileMenuBtn.addEventListener('click', (e) => {
+                e.stopPropagation();
+                navMenu.classList.toggle('active');
+            });
             
-            if (!email) {
-                showAlert('Please enter your email address', 'error');
-                return;
-            }
-
-            try {
-                const response = await fetch('/api/auth/forgot-password', {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                    },
-                    body: JSON.stringify({ email })
-                });
-
-                const data = await response.json();
-
-                if (response.ok) {
-                    document.getElementById('forgot-password-modal').style.display = 'none';
-                    document.getElementById('security-question-modal').style.display = 'block';
-                    
-                    // Display security question
-                    document.getElementById('security-question-text').textContent = data.security_question;
-                    document.getElementById('security-answer-input').setAttribute('data-email', email);
-                    
-                    showAlert('Please answer your security question', 'info');
-                } else {
-                    showAlert(data.error, 'error');
+            // Close mobile menu when clicking outside
+            document.addEventListener('click', (e) => {
+                if (!e.target.closest('.nav-menu') && !e.target.closest('.mobile-menu-btn')) {
+                    navMenu.classList.remove('active');
                 }
-            } catch (error) {
-                console.error('Forgot password request failed:', error);
-                showAlert('Failed to process request. Please try again.', 'error');
-            }
-        });
-    }
-
-    // Security question form - step 2: answer security question
-    if (securityQuestionForm) {
-        securityQuestionForm.addEventListener('submit', async (e) => {
-            e.preventDefault();
-            const answer = document.getElementById('security-answer-input').value.trim();
-            const email = document.getElementById('security-answer-input').getAttribute('data-email');
-
-            if (!answer) {
-                showAlert('Please enter your answer', 'error');
-                return;
-            }
-
-            try {
-                const response = await fetch('/api/auth/verify-security-answer', {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                    },
-                    body: JSON.stringify({ 
-                        email: email,
-                        security_answer: answer 
-                    })
-                });
-
-                const data = await response.json();
-
-                if (response.ok) {
-                    document.getElementById('security-question-modal').style.display = 'none';
-                    document.getElementById('reset-password-modal').style.display = 'block';
-                    
-                    // Store the reset token temporarily
-                    document.getElementById('reset-password-form').setAttribute('data-reset-token', data.reset_token);
-                    document.getElementById('reset-password-form').setAttribute('data-email', email);
-                    
-                    showAlert('Security question verified! Please create a new password.', 'success');
-                } else {
-                    showAlert(data.error, 'error');
-                }
-            } catch (error) {
-                console.error('Security answer verification failed:', error);
-                showAlert('Failed to verify answer. Please try again.', 'error');
-            }
-        });
-    }
-
-    // Reset password form - step 3: create new password
-    if (resetPasswordForm) {
-        resetPasswordForm.addEventListener('submit', async (e) => {
-            e.preventDefault();
-            const newPassword = document.getElementById('new-reset-password').value;
-            const confirmPassword = document.getElementById('confirm-reset-password').value;
-            const resetToken = document.getElementById('reset-password-form').getAttribute('data-reset-token');
-            const email = document.getElementById('reset-password-form').getAttribute('data-email');
-
-            if (newPassword !== confirmPassword) {
-                showAlert('Passwords do not match', 'error');
-                return;
-            }
-
-            if (newPassword.length < 6) {
-                showAlert('Password must be at least 6 characters', 'error');
-                return;
-            }
-
-            try {
-                const response = await fetch('/api/auth/reset-password', {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                    },
-                    body: JSON.stringify({ 
-                        email: email,
-                        new_password: newPassword,
-                        reset_token: resetToken
-                    })
-                });
-
-                const data = await response.json();
-
-                if (response.ok) {
-                    document.getElementById('reset-password-modal').style.display = 'none';
-                    showAlert('Password reset successfully! You can now login with your new password.', 'success');
-                    
-                    // Clear forms
-                    document.getElementById('forgot-password-form').reset();
-                    document.getElementById('security-question-form').reset();
-                    document.getElementById('reset-password-form').reset();
-                    
-                    // Show login modal
-                    setTimeout(() => {
-                        document.getElementById('login-modal').style.display = 'block';
-                    }, 2000);
-                } else {
-                    showAlert(data.error, 'error');
-                }
-            } catch (error) {
-                console.error('Password reset failed:', error);
-                showAlert('Failed to reset password. Please try again.', 'error');
-            }
-        });
-    }
-}
-
-
-// Real-time password match validation
-function validatePasswordMatch() {
-    const password = document.getElementById('signup-password');
-    const confirmPassword = document.getElementById('signup-confirm-password');
-    
-    if (password && confirmPassword) {
-        if (confirmPassword.value && password.value !== confirmPassword.value) {
-            confirmPassword.style.borderColor = '#e74c3c';
-        } else if (confirmPassword.value && password.value === confirmPassword.value) {
-            confirmPassword.style.borderColor = '#27ae60';
-        } else {
-            confirmPassword.style.borderColor = '';
+            });
         }
     }
-}
 
-// ==================== PASSWORD TOGGLE FUNCTIONALITY ====================
+    // Navigation Setup
+    setupNavigation() {
+        // Account dropdown
+        const accountToggle = document.querySelector('.account-toggle');
+        const accountMenu = document.querySelector('.account-menu');
 
-function setupPasswordToggle() {
-    document.addEventListener('click', function(e) {
-        if (e.target.closest('.toggle-password')) {
-            const button = e.target.closest('.toggle-password');
-            const targetId = button.getAttribute('data-target');
-            const passwordInput = document.getElementById(targetId);
-            const icon = button.querySelector('i');
+        if (accountToggle && accountMenu) {
+            let menuTimeout;
             
-            if (passwordInput.type === 'password') {
-                passwordInput.type = 'text';
-                icon.classList.remove('fa-eye');
-                icon.classList.add('fa-eye-slash');
-            } else {
-                passwordInput.type = 'password';
-                icon.classList.remove('fa-eye-slash');
-                icon.classList.add('fa-eye');
-            }
-        }
-    });
-}
+            accountToggle.addEventListener('click', (e) => {
+                e.stopPropagation();
+                accountMenu.classList.toggle('active');
+            });
 
-// Logout function
-async function logoutUser() {
-    const sessionToken = localStorage.getItem('sessionToken');
-    
-    if (sessionToken) {
+            // Keep menu open when hovering
+            accountToggle.addEventListener('mouseenter', () => {
+                clearTimeout(menuTimeout);
+                accountMenu.classList.add('active');
+            });
+
+            accountMenu.addEventListener('mouseenter', () => {
+                clearTimeout(menuTimeout);
+                accountMenu.classList.add('active');
+            });
+
+            accountToggle.addEventListener('mouseleave', () => {
+                menuTimeout = setTimeout(() => {
+                    if (!accountMenu.matches(':hover')) {
+                        accountMenu.classList.remove('active');
+                    }
+                }, 300);
+            });
+
+            accountMenu.addEventListener('mouseleave', () => {
+                menuTimeout = setTimeout(() => {
+                    accountMenu.classList.remove('active');
+                }, 300);
+            });
+
+            // Close on click outside
+            document.addEventListener('click', (e) => {
+                if (!e.target.closest('.account-dropdown')) {
+                    accountMenu.classList.remove('active');
+                }
+            });
+        }
+
+        // Search functionality
+        this.setupSearch();
+    }
+
+    setupSearch() {
+        const searchInput = document.querySelector('.search-input');
+        const searchBtn = document.querySelector('.search-btn');
+
+        if (searchInput && searchBtn) {
+            const performSearch = () => {
+                const searchTerm = searchInput.value.trim();
+                if (searchTerm) {
+                    if (window.location.pathname.includes('shop.html')) {
+                        // If on shop page, use shop search
+                        if (window.shopManager) {
+                            window.shopManager.searchProducts(searchTerm);
+                        }
+                    } else {
+                        // Redirect to shop with search term
+                        window.location.href = `/shop?search=${encodeURIComponent(searchTerm)}`;
+                    }
+                    searchInput.value = '';
+                }
+            };
+
+            searchBtn.addEventListener('click', performSearch);
+            searchInput.addEventListener('keypress', (e) => {
+                if (e.key === 'Enter') {
+                    performSearch();
+                }
+            });
+        }
+    }
+
+    // Modal Methods
+    setupModals() {
+        // Close modals
+        document.querySelectorAll('.close-modal').forEach(button => {
+            button.addEventListener('click', () => {
+                this.hideAllModals();
+            });
+        });
+
+        // Close modal when clicking outside
+        document.querySelectorAll('.modal').forEach(modal => {
+            modal.addEventListener('click', (e) => {
+                if (e.target === modal) {
+                    this.hideAllModals();
+                }
+            });
+        });
+
+        // Login form
+        const loginForm = document.getElementById('login-form');
+        if (loginForm) {
+            loginForm.addEventListener('submit', async (e) => {
+                e.preventDefault();
+                const email = document.getElementById('login-email').value;
+                const password = document.getElementById('login-password').value;
+                await this.login(email, password);
+            });
+        }
+
+        // Signup form
+        const signupForm = document.getElementById('signup-form');
+        if (signupForm) {
+            signupForm.addEventListener('submit', async (e) => {
+                e.preventDefault();
+                const fullName = document.getElementById('signup-name').value;
+                const email = document.getElementById('signup-email').value;
+                const password = document.getElementById('signup-password').value;
+                const confirmPassword = document.getElementById('signup-confirm-password').value;
+
+                if (password !== confirmPassword) {
+                    this.showAlert('Passwords do not match', 'error');
+                    return;
+                }
+
+                await this.signup(fullName, email, password);
+            });
+        }
+
+        // Modal switching
+        const switchToSignup = document.querySelector('[onclick="switchToSignup()"]');
+        const switchToLogin = document.querySelector('[onclick="switchToLogin()"]');
+
+        if (switchToSignup) {
+            switchToSignup.addEventListener('click', () => {
+                this.hideModal('login-modal');
+                this.showModal('signup-modal');
+            });
+        }
+
+        if (switchToLogin) {
+            switchToLogin.addEventListener('click', () => {
+                this.hideModal('signup-modal');
+                this.showModal('login-modal');
+            });
+        }
+    }
+
+    showModal(modalId) {
+        this.hideAllModals();
+        const modal = document.getElementById(modalId);
+        if (modal) {
+            modal.style.display = 'block';
+            document.body.style.overflow = 'hidden';
+        }
+    }
+
+    hideModal(modalId) {
+        const modal = document.getElementById(modalId);
+        if (modal) {
+            modal.style.display = 'none';
+        }
+        this.checkBodyOverflow();
+    }
+
+    hideAllModals() {
+        document.querySelectorAll('.modal').forEach(modal => {
+            modal.style.display = 'none';
+        });
+        this.checkBodyOverflow();
+    }
+
+    checkBodyOverflow() {
+        const hasOpenModal = Array.from(document.querySelectorAll('.modal')).some(modal => 
+            modal.style.display === 'block'
+        );
+        document.body.style.overflow = hasOpenModal ? 'hidden' : '';
+    }
+
+    // Authentication Methods
+   async login(email, password) {
         try {
-            await fetch('/api/auth/logout', {
+            // For demo purposes - create proper user data based on input
+            const userData = {
+                id: Date.now(), // Use timestamp as unique ID for demo
+                fullName: email.split('@')[0], // Use email prefix as name for demo
+                email: email,
+                username: email.split('@')[0]
+            };
+            
+            const sessionToken = 'demo-token-' + Date.now();
+            
+            localStorage.setItem('sessionToken', sessionToken);
+            localStorage.setItem('userData', JSON.stringify(userData)); // Store user data
+            
+            this.currentUser = userData;
+            this.updateAuthUI();
+            this.hideModal('login-modal');
+            this.showAlert('Login successful!', 'success');
+            
+            // Update cart and wishlist counts after login
+            this.updateCartCount();
+            this.updateWishlistCount();
+            
+            return true;
+            
+        } catch (error) {
+            console.error('Login error:', error);
+            this.showAlert('Login failed. Please try again.', 'error');
+            return false;
+        }
+    }
+
+    async signup(fullName, email, password) {
+        try {
+            const userData = {
+                id: Date.now(), // Use timestamp as unique ID for demo
+                fullName: fullName,
+                email: email,
+                username: email.split('@')[0]
+            };
+            
+            const sessionToken = 'demo-token-' + Date.now();
+            
+            localStorage.setItem('sessionToken', sessionToken);
+            localStorage.setItem('userData', JSON.stringify(userData)); // Store user data
+            
+            this.currentUser = userData;
+            this.updateAuthUI();
+            this.hideModal('signup-modal');
+            this.showAlert('Account created successfully!', 'success');
+            
+            this.updateCartCount();
+            this.updateWishlistCount();
+            
+            return true;
+            
+        } catch (error) {
+            console.error('Signup error:', error);
+            this.showAlert('Signup failed. Please try again.', 'error');
+            return false;
+        }
+    }
+
+    // Current User Getter
+    getCurrentUser() {
+        return this.currentUser;
+    }
+
+    // Logout Method
+    async logout() {
+        const sessionToken = localStorage.getItem('sessionToken');
+        if (sessionToken) {
+            try {
+                await fetch('/api/auth/logout', {
+                    method: 'POST',
+                    headers: {
+                        'Authorization': sessionToken
+                    }
+                });
+            } catch (error) {
+                console.error('Logout error:', error);
+            }
+        }
+
+        localStorage.removeItem('sessionToken');
+        this.currentUser = null;
+        this.updateAuthUI();
+        this.showAlert('Logged out successfully', 'success');
+        
+        if (window.location.pathname.includes('user-interface.html')) {
+            setTimeout(() => {
+                window.location.href = '/';
+            }, 1500);
+        }
+    }
+
+    // Wishlist Methods
+    async addToWishlist(productId) {
+        if (!this.currentUser) {
+            this.showModal('login-modal');
+            return false;
+        }
+
+        try {
+            const sessionToken = localStorage.getItem('sessionToken');
+            const response = await fetch('/api/wishlist', {
                 method: 'POST',
                 headers: {
+                    'Content-Type': 'application/json',
                     'Authorization': sessionToken
-                }
+                },
+                body: JSON.stringify({ product_id: productId })
             });
+
+            if (response.ok) {
+                this.updateWishlistCount();
+                this.showAlert('Product added to wishlist!', 'success');
+                return true;
+            } else {
+                const data = await response.json();
+                this.showAlert(data.error || 'Failed to add product to wishlist', 'error');
+                return false;
+            }
         } catch (error) {
-            console.error('Logout API call failed:', error);
+            console.error('Add to wishlist error:', error);
+            this.showAlert('Error adding to wishlist', 'error');
+            return false;
         }
     }
 
+    // Cart Methods
+    async addToCart(productId, quantity = 1) {
+        if (!this.currentUser) {
+            this.showModal('login-modal');
+            return false;
+        }
 
-    
-    // Clear local storage
-    localStorage.removeItem('sessionToken');
-    localStorage.removeItem('currentUser');
-    
-    updateAuthUI();
-    showAlert('Logged out successfully', 'success');
-    
-    // Redirect to home page if we're on dashboard
-    if (window.location.pathname.includes('user-interface.html')) {
-        setTimeout(() => {
-            window.location.href = 'index.html';
-        }, 1500);
-    }
-}
-
-async function checkAuthentication() {
-    const sessionToken = localStorage.getItem('sessionToken');
-    const savedUser = localStorage.getItem('currentUser');
-    
-    if (sessionToken && savedUser) {
         try {
-            const response = await fetch('/api/auth/me', {
+            const sessionToken = localStorage.getItem('sessionToken');
+            const response = await fetch('/api/cart', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': sessionToken
+                },
+                body: JSON.stringify({ product_id: productId, quantity })
+            });
+
+            if (response.ok) {
+                this.updateCartCount();
+                this.showAlert('Product added to cart!', 'success');
+                
+                // Update user dashboard if it's open
+                if (window.userDashboard) {
+                    window.userDashboard.loadCart();
+                }
+                return true;
+            } else {
+                this.showAlert('Failed to add product to cart', 'error');
+                return false;
+            }
+        } catch (error) {
+            console.error('Add to cart error:', error);
+            this.showAlert('Error adding to cart', 'error');
+            return false;
+        }
+    }
+
+    async updateCartCount() {
+        if (!this.currentUser) {
+            document.querySelectorAll('.cart-count').forEach(el => {
+                el.textContent = '0';
+            });
+            return;
+        }
+
+        try {
+            const sessionToken = localStorage.getItem('sessionToken');
+            const response = await fetch('/api/cart', {
                 headers: {
                     'Authorization': sessionToken
                 }
             });
-            
+
             if (response.ok) {
                 const data = await response.json();
-                currentUser = data.user;
-                updateAuthUI();
-            } else {
-                // Token invalid, clear localStorage
-                localStorage.removeItem('sessionToken');
-                localStorage.removeItem('currentUser');
+                document.querySelectorAll('.cart-count').forEach(el => {
+                    el.textContent = data.item_count || '0';
+                });
             }
         } catch (error) {
-            console.error('Auth check failed:', error);
-            // Fallback to localStorage if API fails
-            if (savedUser) {
-                currentUser = JSON.parse(savedUser);
-                updateAuthUI();
-            }
+            console.error('Update cart count error:', error);
         }
+    }
+
+    async updateWishlistCount() {
+        if (!this.currentUser) {
+            document.querySelectorAll('.wishlist-count').forEach(el => {
+                el.textContent = '0';
+            });
+            return;
+        }
+
+        try {
+            const sessionToken = localStorage.getItem('sessionToken');
+            const response = await fetch('/api/wishlist', {
+                headers: {
+                    'Authorization': sessionToken
+                }
+            });
+
+            if (response.ok) {
+                const data = await response.json();
+                document.querySelectorAll('.wishlist-count').forEach(el => {
+                    el.textContent = data.length || '0';
+                });
+            }
+        } catch (error) {
+            console.error('Update wishlist count error:', error);
+        }
+    }
+
+    // Event Listeners
+    setupEventListeners() {
+        // Password toggle
+        document.addEventListener('click', (e) => {
+            if (e.target.closest('.toggle-password')) {
+                const button = e.target.closest('.toggle-password');
+                const targetId = button.getAttribute('data-target');
+                const passwordInput = document.getElementById(targetId);
+                const icon = button.querySelector('i');
+                
+                if (passwordInput.type === 'password') {
+                    passwordInput.type = 'text';
+                    icon.classList.remove('fa-eye');
+                    icon.classList.add('fa-eye-slash');
+                } else {
+                    passwordInput.type = 'password';
+                    icon.classList.remove('fa-eye-slash');
+                    icon.classList.add('fa-eye');
+                }
+            }
+        });
+
+        // Navbar scroll effect
+        window.addEventListener('scroll', () => {
+            const navbar = document.querySelector('.navbar');
+            if (window.scrollY > 100) {
+                navbar.classList.add('scrolled');
+            } else {
+                navbar.classList.remove('scrolled');
+            }
+        });
+
+        // Contact form
+        const contactForm = document.getElementById('message-form');
+        if (contactForm) {
+            contactForm.addEventListener('submit', async (e) => {
+                e.preventDefault();
+                const formData = new FormData(contactForm);
+                const data = {
+                    name: formData.get('name'),
+                    email: formData.get('email'),
+                    message: formData.get('message')
+                };
+
+                try {
+                    const response = await fetch('/api/contact', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json'
+                        },
+                        body: JSON.stringify(data)
+                    });
+
+                    if (response.ok) {
+                        this.showAlert('Message sent successfully!', 'success');
+                        contactForm.reset();
+                    } else {
+                        this.showAlert('Failed to send message', 'error');
+                    }
+                } catch (error) {
+                    console.error('Contact form error:', error);
+                    this.showAlert('Error sending message', 'error');
+                }
+            });
+        }
+    }
+
+    // Utility Methods
+    showAlert(message, type = 'info') {
+        // Remove existing alerts
+        document.querySelectorAll('.alert').forEach(alert => alert.remove());
+
+        const alert = document.createElement('div');
+        alert.className = `alert alert-${type}`;
+        alert.innerHTML = `
+            <div style="display: flex; align-items: center; gap: 10px;">
+                <i class="fas ${this.getAlertIcon(type)}"></i>
+                <span>${message}</span>
+            </div>
+        `;
+
+        document.body.appendChild(alert);
+
+        // Auto remove after 5 seconds
+        setTimeout(() => {
+            if (alert.parentNode) {
+                alert.remove();
+            }
+        }, 5000);
+    }
+
+    getAlertIcon(type) {
+        const icons = {
+            success: 'fa-check-circle',
+            error: 'fa-exclamation-triangle',
+            warning: 'fa-exclamation-circle',
+            info: 'fa-info-circle'
+        };
+        return icons[type] || 'fa-info-circle';
+    }
+
+    formatPrice(price) {
+        return new Intl.NumberFormat('en-GH', {
+            style: 'currency',
+            currency: 'GHS'
+        }).format(price);
     }
 }
 
-// ==================== MODAL & ALERT FUNCTIONS ====================
-
-// Modal switching functions for home page
+// Global functions for HTML onclick attributes
 function switchToSignup() {
-    document.getElementById('login-modal').style.display = 'none';
-    document.getElementById('signup-modal').style.display = 'block';
+    if (window.app) {
+        window.app.hideModal('login-modal');
+        window.app.showModal('signup-modal');
+    }
 }
 
 function switchToLogin() {
-    document.getElementById('signup-modal').style.display = 'none';
-    document.getElementById('login-modal').style.display = 'block';
-}
-
-// Alert function for main.js (if user.js doesn't load first)
-function showAlert(message, type = 'info') {
-    const existingAlert = document.querySelector('.alert-message');
-    if (existingAlert) {
-        existingAlert.remove();
-    }
-
-    const alertElement = document.createElement('div');
-    alertElement.className = `alert-message alert-${type}`;
-    alertElement.innerHTML = `
-        <div style="display: flex; align-items: center; gap: 10px;">
-            <i class="fas ${type === 'success' ? 'fa-check-circle' : type === 'error' ? 'fa-exclamation-triangle' : 'fa-info-circle'}"></i>
-            <span>${message}</span>
-        </div>
-    `;
-    
-    alertElement.style.cssText = `
-        position: fixed;
-        top: 120px;
-        right: 20px;
-        padding: 15px 20px;
-        border-radius: 12px;
-        color: white;
-        font-weight: 600;
-        z-index: 3000;
-        animation: slideIn 0.3s ease;
-        min-width: 300px;
-        backdrop-filter: blur(10px);
-        ${type === 'success' ? 
-            'background: linear-gradient(135deg, rgba(39, 174, 96, 0.95), rgba(46, 204, 113, 0.95));' : 
-            type === 'error' ?
-            'background: linear-gradient(135deg, rgba(231, 76, 60, 0.95), rgba(192, 57, 43, 0.95));' :
-            'background: linear-gradient(135deg, rgba(52, 152, 219, 0.95), rgba(41, 128, 185, 0.95));'
-        }
-        box-shadow: 0 8px 32px rgba(0,0,0,0.2);
-        border: 1px solid rgba(255,255,255,0.2);
-    `;
-
-    document.body.appendChild(alertElement);
-
-    setTimeout(() => {
-        alertElement.style.animation = 'slideOut 0.3s ease';
-        setTimeout(() => alertElement.remove(), 300);
-    }, 4000);
-}
-
-// Add CSS for alert animations (only if not already added)
-if (!document.querySelector('style[data-alert-animations]')) {
-    const alertStyle = document.createElement('style');
-    alertStyle.setAttribute('data-alert-animations', 'true');
-    alertStyle.textContent = `
-        @keyframes slideIn {
-            from { transform: translateX(100%); opacity: 0; }
-            to { transform: translateX(0); opacity: 1; }
-        }
-        
-        @keyframes slideOut {
-            from { transform: translateX(0); opacity: 1; }
-            to { transform: translateX(100%); opacity: 0; }
-        }
-    `;
-    document.head.appendChild(alertStyle);
-}
-
-
-// ==================== CHRISTMAS BANNER FUNCTIONALITY ====================
-
-function initChristmasBanner() {
-    const banner = document.querySelector('.sticky-banner');
-    const closeBtn = document.querySelector('.close-banner');
-    
-    if (!banner) return;
-    
-    // Check if user previously closed the banner
-    if (sessionStorage.getItem('bannerClosed') !== 'true') {
-        showBanner();
-    }
-    
-    // Close button functionality
-    if (closeBtn) {
-        closeBtn.addEventListener('click', closeBanner);
-    }
-    
-    // Make phone number clickable
-    const phoneNumber = document.querySelector('.phone-number');
-    if (phoneNumber) {
-        phoneNumber.addEventListener('click', function() {
-            window.open('tel:+233591373371');
-        });
-    }
-    
-    // Close on escape key
-    document.addEventListener('keydown', function(e) {
-        if (e.key === 'Escape') closeBanner();
-    });
-}
-
-function showBanner() {
-    const banner = document.querySelector('.sticky-banner');
-    if (banner) {
-        banner.style.display = 'block';
-        document.body.classList.add('banner-visible');
+    if (window.app) {
+        window.app.hideModal('signup-modal');
+        window.app.showModal('login-modal');
     }
 }
 
-function closeBanner() {
-    const banner = document.querySelector('.sticky-banner');
-    if (banner) {
-        banner.style.display = 'none';
-        document.body.classList.remove('banner-visible');
-        sessionStorage.setItem('bannerClosed', 'true');
-    }
-}
-
-// Initialize banner when DOM is loaded
-document.addEventListener('DOMContentLoaded', function() {
-    initChristmasBanner();
-});
-
-// ==================== SHOP NOW FUNCTIONALITY ====================
-
-// Shop Now button handler
-function handleShopNowClick() {
-    // If user is on index page, redirect to shop page
-    if (window.location.pathname.includes('index.html') || window.location.pathname === '/') {
-        window.location.href = 'shop.html';
-    }
-}
-
-// ==================== INITIALIZATION ====================
-
-// SINGLE DOMContentLoaded event listener
-document.addEventListener('DOMContentLoaded', async function() {
-    console.log('DOM fully loaded - initializing main.js');
-    
-    // Check authentication first
-    await checkAuthentication();
-
-    // Initialize new navigation system
-    setupNewNavigation();
-
-    // Initialize featured products
-    displayFeaturedProducts();
-    
-    // Initialize authentication
-    setupHomeAuth();
-
-    // Initialize password toggle functionality
-    setupPasswordToggle();
-
-    // Initialize counts
-    initializeCounts();
-
-    // Initialize forgot password
-    setupForgotPassword();
-    
-    // Update auth UI on page load
-    //updateAuthUI();
-
-    // Add shop now button listeners
-    document.querySelectorAll('.btn-primary, .shop-now-btn').forEach(button => {
-        if (button.textContent.includes('Shop Now') || button.classList.contains('shop-now-btn')) {
-            button.addEventListener('click', handleShopNowClick);
-        }
-    });
-
-    console.log('Initialization complete');
+// Initialize app when DOM is loaded
+document.addEventListener('DOMContentLoaded', () => {
+    window.app = new HTLuxeScents();
 });
