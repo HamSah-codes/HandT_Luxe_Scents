@@ -12,6 +12,9 @@ import uuid
 from werkzeug.utils import secure_filename
 from functools import wraps
 from dotenv import load_dotenv
+import requests
+import json
+from twilio.rest import Client
 
 load_dotenv()
 
@@ -40,9 +43,56 @@ def get_db_connection():
 
 def init_db():
     """Initialize database with all tables"""
-    conn = get_db_connection()
-    cursor = conn.cursor()
+    conn = None
+    try:
+        conn = get_db_connection()
+        cursor = conn.cursor()
     
+  
+        # Check if users table exists
+        cursor.execute("SELECT name FROM sqlite_master WHERE type='table' AND name='users'")
+        if not cursor.fetchone():
+            print("Database tables not found. Creating tables...")
+            # Run your schema.sql file if it exists
+            schema_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'database', 'schema.sql')
+            if os.path.exists(schema_path):
+                with open(schema_path, 'r') as f:
+                    schema_sql = f.read()
+                cursor.executescript(schema_sql)
+                print("Database schema loaded from schema.sql")
+            else:
+                # Fallback to creating essential tables
+                print("schema.sql not found, creating tables directly...")
+                create_essential_tables(cursor)
+
+
+            # Insert default categories
+            default_categories = [
+                ("Men's Fragrances", "Sophisticated scents for the modern gentleman", "/static/assets/img/men-category.jpg"),
+                ("Women's Fragrances", "Elegant and captivating fragrances for women", "/static/assets/img/women-category.jpg"),
+                ("Unisex Fragrances", "Versatile scents that transcend gender", "/static/assets/img/unisex-category.jpg"),
+                ("Luxury Collection", "Exclusive premium fragrances", "/static/assets/img/luxury-category.jpg"),
+                ("Seasonal Scents", "Fragrances for every season", "/static/assets/img/seasonal-category.jpg")
+            ]
+                
+            for category in default_categories:
+                cursor.execute(
+                    'INSERT OR IGNORE INTO categories (name, description, image_url) VALUES (?, ?, ?)',
+                    category
+                )
+                
+            conn.commit()
+            print("Database initialized successfully!")
+        else:
+            print("Database tables already exist.")
+
+    except Exception as e:
+        print(f"Database initialization error: {e}")
+    finally:
+        if conn:
+            conn.close()
+
+def create_essential_tables(cursor):
     # Users table
     cursor.execute('''
         CREATE TABLE IF NOT EXISTS users (
@@ -57,7 +107,7 @@ def init_db():
             email_verified BOOLEAN DEFAULT 0
         )
     ''')
-    
+        
     # Categories table
     cursor.execute('''
         CREATE TABLE IF NOT EXISTS categories (
@@ -68,7 +118,7 @@ def init_db():
             created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
         )
     ''')
-    
+        
     # Products table
     cursor.execute('''
         CREATE TABLE IF NOT EXISTS products (
@@ -90,7 +140,7 @@ def init_db():
             FOREIGN KEY (category_id) REFERENCES categories (id)
         )
     ''')
-    
+        
     # User sessions table
     cursor.execute('''
         CREATE TABLE IF NOT EXISTS user_sessions (
@@ -103,7 +153,7 @@ def init_db():
             FOREIGN KEY (user_id) REFERENCES users (id) ON DELETE CASCADE
         )
     ''')
-    
+        
     # Cart table
     cursor.execute('''
         CREATE TABLE IF NOT EXISTS cart (
@@ -117,7 +167,7 @@ def init_db():
             UNIQUE(user_id, product_id)
         )
     ''')
-    
+        
     # Wishlist table
     cursor.execute('''
         CREATE TABLE IF NOT EXISTS wishlist (
@@ -130,7 +180,7 @@ def init_db():
             UNIQUE(user_id, product_id)
         )
     ''')
-    
+        
     # Orders table
     cursor.execute('''
         CREATE TABLE IF NOT EXISTS orders (
@@ -147,7 +197,7 @@ def init_db():
             FOREIGN KEY (user_id) REFERENCES users (id) ON DELETE CASCADE
         )
     ''')
-    
+        
     # Order items table
     cursor.execute('''
         CREATE TABLE IF NOT EXISTS order_items (
@@ -160,7 +210,7 @@ def init_db():
             FOREIGN KEY (product_id) REFERENCES products (id)
         )
     ''')
-    
+        
     # Reviews table
     cursor.execute('''
         CREATE TABLE IF NOT EXISTS reviews (
@@ -175,8 +225,8 @@ def init_db():
             FOREIGN KEY (user_id) REFERENCES users (id) ON DELETE CASCADE
         )
     ''')
-    
-    # Messages table
+        
+        # Messages table
     cursor.execute('''
         CREATE TABLE IF NOT EXISTS messages (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -189,6 +239,7 @@ def init_db():
         )
     ''')
     
+        
     # Create indexes
     cursor.execute('CREATE INDEX IF NOT EXISTS idx_user_sessions_token ON user_sessions(session_token)')
     cursor.execute('CREATE INDEX IF NOT EXISTS idx_user_sessions_expires ON user_sessions(expires_at)')
@@ -197,25 +248,8 @@ def init_db():
     cursor.execute('CREATE INDEX IF NOT EXISTS idx_orders_user_id ON orders(user_id)')
     cursor.execute('CREATE INDEX IF NOT EXISTS idx_products_category ON products(category_id)')
     cursor.execute('CREATE INDEX IF NOT EXISTS idx_products_available ON products(is_available)')
+        
     
-    # Insert default categories
-    default_categories = [
-        ("Men's Fragrances", "Sophisticated scents for the modern gentleman", "/static/assets/img/men-category.jpg"),
-        ("Women's Fragrances", "Elegant and captivating fragrances for women", "/static/assets/img/women-category.jpg"),
-        ("Unisex Fragrances", "Versatile scents that transcend gender", "/static/assets/img/unisex-category.jpg"),
-        ("Luxury Collection", "Exclusive premium fragrances", "/static/assets/img/luxury-category.jpg"),
-        ("Seasonal Scents", "Fragrances for every season", "/static/assets/img/seasonal-category.jpg")
-    ]
-    
-    for category in default_categories:
-        cursor.execute(
-            'INSERT OR IGNORE INTO categories (name, description, image_url) VALUES (?, ?, ?)',
-            category
-        )
-    
-    conn.commit()
-    conn.close()
-    print("Database initialized successfully!")
 
 # Authentication helper functions
 def hash_password(password):
@@ -265,6 +299,53 @@ def login_required(f):
 def validate_email(email):
     pattern = r'^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$'
     return re.match(pattern, email) is not None
+
+
+def send_whatsapp_order_notification(order_data, customer_phone, shipping_address):
+    """Send order notification via direct WhatsApp link"""
+    try: 
+        # Format order message
+        order_items = "\n".join([f"• {item['name']} (Qty: {item['quantity']}) - GH₵{item['price']}" 
+                               for item in order_data['items']])
+        
+        message = f"""
+🛍️ NEW ORDER RECEIVED!
+
+Order #: {order_data['order_number']}
+Customer: {order_data['customer_name']}
+Phone: {customer_phone}
+Total: GH₵{order_data['total_amount']}
+
+📦 Shipping Address:
+{shipping_address}
+
+🛒 Order Items:
+{order_items}
+
+Order Date: {order_data['order_date']}
+        """.strip()
+
+        # Your business WhatsApp number (without +)
+        your_whatsapp_number = "233591373371"  # Your actual number
+        
+        # Create WhatsApp URL that opens with pre-filled message
+        encoded_message = requests.utils.quote(message)
+        whatsapp_url = f"https://wa.me/{your_whatsapp_number}?text={encoded_message}"
+        
+        print("=" * 60)
+        print("📱 WHATSAPP ORDER NOTIFICATION READY")
+        print("=" * 60)
+        print(f"🔗 Click this link to send: {whatsapp_url}")
+        print("=" * 60)
+        print(f"📝 Message: {message}")
+        print("=" * 60)
+        return True
+        
+        
+    except Exception as e:
+        print(f"WhatsApp notification error: {e}")
+        return False
+
 
 # Routes
 @app.route('/')
@@ -369,51 +450,73 @@ def get_categories():
 # API Routes - Authentication
 @app.route('/api/auth/signup', methods=['POST'])
 def api_signup():
-    data = request.get_json()
-    full_name = data.get('fullName', '').strip()
-    email = data.get('email', '').strip().lower()
-    password = data.get('password', '')
-    
-    if not all([full_name, email, password]):
-        return jsonify({'error': 'All fields are required'}), 400
-    
-    if not validate_email(email):
-        return jsonify({'error': 'Invalid email format'}), 400
-    
-    if len(password) < 6:
-        return jsonify({'error': 'Password must be at least 6 characters'}), 400
-    
-    password_hash = hash_password(password)
-    username = email.split('@')[0]
-    
-    conn = get_db_connection()
-    cursor = conn.cursor()
-    
     try:
-        cursor.execute(
-            'INSERT INTO users (username, email, full_name, password_hash) VALUES (?, ?, ?, ?)',
-            (username, email, full_name, password_hash)
-        )
-        user_id = cursor.lastrowid
-        session_token = create_session(user_id)
-        conn.commit()
+        data = request.get_json()
+        print(f"Received signup data: {data}")  # Debug
         
-        return jsonify({
-            'message': 'Account created successfully',
-            'user': {
-                'id': user_id,
-                'fullName': full_name,
-                'email': email,
-                'username': username
-            },
-            'sessionToken': session_token
-        })
-    except sqlite3.IntegrityError:
-        return jsonify({'error': 'Email already exists'}), 400
+        if not data:
+            return jsonify({'error': 'No data provided'}), 400
+            
+
+        full_name = data.get('fullName', '').strip()
+        email = data.get('email', '').strip().lower()
+        password = data.get('password', '')
+        
+        if not all([full_name, email, password]):
+            return jsonify({'error': 'All fields are required'}), 400
+        
+        if not validate_email(email):
+            return jsonify({'error': 'Invalid email format'}), 400
+        
+        if len(password) < 6:
+            return jsonify({'error': 'Password must be at least 6 characters'}), 400
+        
+       # Simple password hashing (no bcrypt)
+        password_hash = hash_password(password)
+        username = email.split('@')[0]
+        
+        conn = get_db_connection()
+        cursor = conn.cursor()
+        
+        try:
+            cursor.execute(
+                'INSERT INTO users (username, email, full_name, password_hash) VALUES (?, ?, ?, ?)',
+                (username, email, full_name, password_hash)
+            )
+            user_id = cursor.lastrowid
+
+            session_token = secrets.token_urlsafe(32)
+            expires_at = (datetime.now() + timedelta(days=30)).strftime('%Y-%m-%d %H:%M:%S')
+            
+            cursor.execute(
+                'INSERT INTO user_sessions (user_id, session_token, expires_at) VALUES (?, ?, ?)',
+                (user_id, session_token, expires_at)
+            )
+            conn.commit()
+            
+            return jsonify({
+                'message': 'Account created successfully',
+                'user': {
+                    'id': user_id,
+                    'fullName': full_name,
+                    'email': email,
+                    'username': username
+                },
+                'sessionToken': session_token
+            })
+        except sqlite3.IntegrityError:
+            conn.rollback()
+            return jsonify({'error': 'Email already exists'}), 400
+        except Exception as e:
+            conn.rollback()
+            print(f"Database error: {str(e)}")
+            return jsonify({'error': 'Registration failed'}), 500
+        finally:
+            conn.close()
+
     except Exception as e:
-        return jsonify({'error': 'Registration failed'}), 500
-    finally:
-        conn.close()
+        print(f"Signup error: {str(e)}")
+        return jsonify({'error': 'Internal server error'}), 500
 
 @app.route('/api/auth/login', methods=['POST'])
 def api_login():
@@ -469,7 +572,7 @@ def update_user_profile():
     try:
         cursor.execute(
             'UPDATE users SET full_name = ? WHERE id = ?',
-            (data['fullName'], user['id'])
+            (data['fullName'], data.get('phone', ''), data.get('address', ''), user['id'])
         )
         conn.commit()
         
@@ -483,7 +586,9 @@ def update_user_profile():
                 'id': updated_user['id'],
                 'fullName': updated_user['full_name'],
                 'email': updated_user['email'],
-                'username': updated_user['username']
+                'username': updated_user['username'],
+                'phone': updated_user['phone'] or '',
+                'address': updated_user['address'] or ''
             }
         })
     except Exception as e:
@@ -721,6 +826,128 @@ def remove_from_wishlist(product_id):
     
     return jsonify({'message': 'Product removed from wishlist successfully'})
 
+
+@app.route('/api/wishlist/clear', methods=['POST'])
+@login_required
+def clear_wishlist():
+    """Clear all items from user's wishlist"""
+    session_token = request.headers.get('Authorization')
+    user = get_user_from_session(session_token)
+    
+    conn = get_db_connection()
+    cursor = conn.cursor()
+    
+    try:
+        # Delete all wishlist items for this user
+        cursor.execute('DELETE FROM wishlist WHERE user_id = ?', (user['id'],))
+        conn.commit()
+        
+        # Check how many items were removed
+        deleted_count = cursor.rowcount
+        
+        conn.close()
+        
+        return jsonify({
+            'message': f'Cleared {deleted_count} items from wishlist',
+            'deleted_count': deleted_count
+        })
+        
+    except Exception as e:
+        conn.rollback()
+        conn.close()
+        print(f"Clear wishlist error: {e}")
+        return jsonify({'error': 'Failed to clear wishlist'}), 500
+
+@app.route('/api/checkout', methods=['POST'])
+@login_required
+def checkout():
+    """Process checkout and send WhatsApp notification"""
+    session_token = request.headers.get('Authorization')
+    user = get_user_from_session(session_token)
+    data = request.get_json()
+    
+    # Get customer phone and shipping address
+    customer_phone = data.get('phone', '')
+    shipping_address = data.get('shipping_address', '')
+    
+    if not shipping_address:
+        return jsonify({'error': 'Shipping address is required'}), 400
+    
+    conn = get_db_connection()
+    cursor = conn.cursor()
+    
+    try:
+        # Get cart items
+        cursor.execute('''
+            SELECT c.*, p.name, p.price, p.brand
+            FROM cart c
+            JOIN products p ON c.product_id = p.id
+            WHERE c.user_id = ?
+        ''', (user['id'],))
+        cart_items = cursor.fetchall()
+        
+        if not cart_items:
+            return jsonify({'error': 'Cart is empty'}), 400
+        
+        # Calculate total
+        total_amount = sum(item['price'] * item['quantity'] for item in cart_items)
+        
+        # Generate order number
+        order_number = f"ORD-{datetime.now().strftime('%Y%m%d')}-{secrets.token_hex(4).upper()}"
+        
+        # Create order
+        cursor.execute('''
+            INSERT INTO orders (user_id, order_number, total_amount, shipping_address, status)
+            VALUES (?, ?, ?, ?, ?)
+        ''', (user['id'], order_number, total_amount, shipping_address, 'confirmed'))
+        
+        order_id = cursor.lastrowid
+        
+        # Add order items
+        for item in cart_items:
+            cursor.execute('''
+                INSERT INTO order_items (order_id, product_id, quantity, unit_price)
+                VALUES (?, ?, ?, ?)
+            ''', (order_id, item['product_id'], item['quantity'], item['price']))
+        
+        # Clear cart
+        cursor.execute('DELETE FROM cart WHERE user_id = ?', (user['id'],))
+        
+        conn.commit()
+        
+        # Prepare order data for WhatsApp
+        order_data = {
+            'order_number': order_number,
+            'order_id': order_id,
+            'customer_name': user['full_name'],
+            'total_amount': total_amount,
+            'order_date': datetime.now().strftime('%Y-%m-%d %H:%M:%S'),
+            'items': [dict(item) for item in cart_items]
+        }
+        
+        # Send WhatsApp notification
+        whatsapp_sent = send_whatsapp_order_notification(
+            order_data, 
+            customer_phone, 
+            shipping_address
+        )
+        
+        return jsonify({
+            'message': 'Order placed successfully!',
+            'order_number': order_number,
+            'order_id': order_id,
+            'total_amount': total_amount,
+            'whatsapp_sent': True,
+            'notification': 'Order confirmed! Thank you for your purchase.'
+        })
+        
+    except Exception as e:
+        conn.rollback()
+        print(f"Checkout error: {str(e)}")
+        return jsonify({'error': 'Checkout failed'}), 500
+    finally:
+        conn.close()
+
 # API Routes - Orders
 @app.route('/api/orders', methods=['POST'])
 @login_required
@@ -807,6 +1034,106 @@ def get_orders():
     conn.close()
     
     return jsonify([dict(order) for order in orders])
+
+@app.route('/api/debug/all-orders')
+def debug_all_orders():
+    """Check all orders and their users"""
+    conn = get_db_connection()
+    cursor = conn.cursor()
+    cursor.execute('''
+        SELECT o.*, u.email, u.full_name 
+        FROM orders o 
+        LEFT JOIN users u ON o.user_id = u.id
+    ''')
+    orders = cursor.fetchall()
+    conn.close()
+    
+    orders_list = [dict(order) for order in orders]
+    print("🔍 ALL ORDERS IN DATABASE:")
+    for order in orders_list:
+        print(f"  - Order #{order['order_number']} | User: {order['email']} | Total: GH₵{order['total_amount']}")
+    
+    return jsonify(orders_list)
+
+@app.route('/api/debug/my-orders')
+@login_required
+def debug_my_orders():
+    """Check orders for current user only"""
+    session_token = request.headers.get('Authorization')
+    user = get_user_from_session(session_token)
+    
+    conn = get_db_connection()
+    cursor = conn.cursor()
+    cursor.execute('''
+        SELECT * FROM orders WHERE user_id = ?
+    ''', (user['id'],))
+    orders = cursor.fetchall()
+    conn.close()
+    
+    orders_list = [dict(order) for order in orders]
+    print(f"🔍 ORDERS FOR USER {user['email']}: {len(orders_list)} orders")
+    
+    return jsonify(orders_list)
+
+@app.route('/api/debug/current-user')
+@login_required  
+def debug_current_user():
+    session_token = request.headers.get('Authorization')
+    user = get_user_from_session(session_token)
+    
+    print(f"🔍 CURRENT USER: ID={user['id']}, Email={user['email']}, Name={user['full_name']}")
+    
+    return jsonify({
+        'current_user': {
+            'id': user['id'],
+            'email': user['email'], 
+            'full_name': user['full_name']
+        }
+    })
+
+@app.route('/api/orders/<int:order_id>', methods=['GET'])
+@login_required
+def get_order_details(order_id):
+    """Get detailed information for a specific order"""
+    session_token = request.headers.get('Authorization')
+    user = get_user_from_session(session_token)
+    
+    conn = get_db_connection()
+    cursor = conn.cursor()
+    
+    try:
+        # Get order basic info
+        cursor.execute('''
+            SELECT o.*, u.full_name, u.email
+            FROM orders o
+            JOIN users u ON o.user_id = u.id
+            WHERE o.id = ? AND o.user_id = ?
+        ''', (order_id, user['id']))
+        order = cursor.fetchone()
+        
+        if not order:
+            return jsonify({'error': 'Order not found'}), 404
+        
+        # Get order items
+        cursor.execute('''
+            SELECT oi.*, p.name, p.brand, p.image_url
+            FROM order_items oi
+            JOIN products p ON oi.product_id = p.id
+            WHERE oi.order_id = ?
+        ''', (order_id,))
+        order_items = cursor.fetchall()
+        
+        conn.close()
+        
+        return jsonify({
+            'order': dict(order),
+            'items': [dict(item) for item in order_items]
+        })
+        
+    except Exception as e:
+        conn.close()
+        print(f"Order details error: {e}")
+        return jsonify({'error': 'Failed to load order details'}), 500
 
 # Admin API Routes
 @app.route('/api/admin/login', methods=['POST'])

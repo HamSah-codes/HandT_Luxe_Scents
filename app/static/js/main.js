@@ -12,28 +12,49 @@ class HTLuxeScents {
         this.setupMobileMenu();
         this.setupModals();
         this.setupEventListeners();
+        this.setupPageChangeListener();
         this.updateCartCount();
         this.updateWishlistCount();
     }
 
+    refreshAppState() {
+        this.checkAuth();
+        this.updateCartCount();
+        this.updateWishlistCount();
+    }
+
+    setupPageChangeListener() {
+        // Refresh app state when navigating back to main pages
+        window.addEventListener('popstate', () => {
+            setTimeout(() => {
+                this.refreshAppState();
+            }, 100);
+        });
+        
+        // Also refresh when page becomes visible again
+        document.addEventListener('visibilitychange', () => {
+            if (!document.hidden) {
+                this.refreshAppState();
+            }
+        });
+        
+        // Refresh when clicking on navigation links (optional enhancement)
+        document.addEventListener('click', (e) => {
+            if (e.target.matches('a[href*="/"]') || e.target.closest('a[href*="/"]')) {
+                setTimeout(() => {
+                    this.refreshAppState();
+                }, 500);
+            }
+        });
+    }
+
+
     // Authentication Methods
     async checkAuth() {
         const sessionToken = localStorage.getItem('sessionToken');
-        if (sessionToken) {
-            try {
-                // For demo purposes - simulate user data
-                // Replace with actual API call in production
-                setTimeout(() => {
-                    this.currentUser = {
-                        id: 1,
-                        fullName: 'Demo User',
-                        email: 'demo@htluxescents.com',
-                        username: 'demo'
-                    };
-                    this.updateAuthUI();
-                }, 500);
-                
-                /* Actual API call would be:
+            if (sessionToken) {
+                try {
+                    // Make actual API call to verify the session
                 const response = await fetch('/api/auth/me', {
                     headers: {
                         'Authorization': sessionToken
@@ -42,15 +63,19 @@ class HTLuxeScents {
                 
                 if (response.ok) {
                     const data = await response.json();
-                    this.currentUser = data.user;
+                    this.currentUser = data.user; // Use the user object from backend
                     this.updateAuthUI();
                 } else {
+                    // Token is invalid, clear it
                     localStorage.removeItem('sessionToken');
+                    localStorage.removeItem('userData');
+                    this.updateAuthUI();
                 }
-                */
             } catch (error) {
                 console.error('Auth check failed:', error);
                 localStorage.removeItem('sessionToken');
+                localStorage.removeItem('userData');
+                this.updateAuthUI();
             }
         } else {
             this.updateAuthUI();
@@ -361,30 +386,32 @@ class HTLuxeScents {
     // Authentication Methods
    async login(email, password) {
         try {
-            // For demo purposes - create proper user data based on input
-            const userData = {
-                id: Date.now(), // Use timestamp as unique ID for demo
-                fullName: email.split('@')[0], // Use email prefix as name for demo
-                email: email,
-                username: email.split('@')[0]
-            };
-            
-            const sessionToken = 'demo-token-' + Date.now();
-            
-            localStorage.setItem('sessionToken', sessionToken);
-            localStorage.setItem('userData', JSON.stringify(userData)); // Store user data
-            
-            this.currentUser = userData;
-            this.updateAuthUI();
-            this.hideModal('login-modal');
-            this.showAlert('Login successful!', 'success');
-            
-            // Update cart and wishlist counts after login
-            this.updateCartCount();
-            this.updateWishlistCount();
-            
-            return true;
-            
+            const response = await fetch('/api/auth/login', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({ email, password })
+            });
+
+            if (response.ok) {
+                const data = await response.json();
+                localStorage.setItem('sessionToken', data.sessionToken);
+                localStorage.setItem('userData', JSON.stringify(data.user));
+                
+                this.currentUser = data.user;
+                this.updateAuthUI();
+                this.hideModal('login-modal');
+                this.showAlert('Login successful!', 'success');
+                
+                this.updateCartCount();
+                this.updateWishlistCount();
+                return true;
+            } else {
+                const errorData = await response.json();
+                this.showAlert(errorData.error || 'Login failed', 'error');
+                return false;
+            }
         } catch (error) {
             console.error('Login error:', error);
             this.showAlert('Login failed. Please try again.', 'error');
@@ -394,28 +421,38 @@ class HTLuxeScents {
 
     async signup(fullName, email, password) {
         try {
-            const userData = {
-                id: Date.now(), // Use timestamp as unique ID for demo
-                fullName: fullName,
-                email: email,
-                username: email.split('@')[0]
-            };
-            
-            const sessionToken = 'demo-token-' + Date.now();
-            
-            localStorage.setItem('sessionToken', sessionToken);
-            localStorage.setItem('userData', JSON.stringify(userData)); // Store user data
-            
-            this.currentUser = userData;
-            this.updateAuthUI();
-            this.hideModal('signup-modal');
-            this.showAlert('Account created successfully!', 'success');
-            
-            this.updateCartCount();
-            this.updateWishlistCount();
-            
-            return true;
-            
+            const response = await fetch('/api/auth/signup', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({ 
+                    fullName: fullName, 
+                    email: email, 
+                    password: password 
+                })
+            });
+
+            if (response.ok) {
+                const data = await response.json();
+                
+                // Use the actual session token and user data from the backend
+                localStorage.setItem('sessionToken', data.sessionToken);
+                localStorage.setItem('userData', JSON.stringify(data.user));
+                
+                this.currentUser = data.user; // Use the user object from backend
+                this.updateAuthUI();
+                this.hideModal('signup-modal');
+                this.showAlert('Account created successfully!', 'success');
+                
+                this.updateCartCount();
+                this.updateWishlistCount();
+                return true;
+            } else {
+                const errorData = await response.json();
+                this.showAlert(errorData.error || 'Signup failed', 'error');
+                return false;
+            }
         } catch (error) {
             console.error('Signup error:', error);
             this.showAlert('Signup failed. Please try again.', 'error');
