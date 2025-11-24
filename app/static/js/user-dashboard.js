@@ -1,463 +1,304 @@
-// Enhanced User Dashboard JavaScript - Only NEW features
-// This works alongside your existing user.js
-
 class UserDashboard {
     constructor() {
-        this.currentTab = 'dashboard';
         this.currentUser = null;
+        this.cartItems = [];
+        this.wishlistItems = [];
+        this.orders = [];
         this.init();
     }
 
     async init() {
-        await this.checkAuthentication();
+        await this.checkAuth();
+        this.setupNavigation();
         this.setupEventListeners();
-        this.loadDashboardData();
-        this.updateUI();
+        this.loadUserData();
     }
 
-    // Authentication check
-    // In checkAuthentication() method - Add better error handling
-    async checkAuthentication() {
+    async checkAuth() {
         const sessionToken = localStorage.getItem('sessionToken');
-        const savedUser = localStorage.getItem('currentUser');
-        
-        if (sessionToken && savedUser) {
-            try {
-                const response = await fetch('/api/auth/me', {
-                    headers: {
-                        'Authorization': `Bearer ${sessionToken}` // Add Bearer prefix
-                    }
-                });
-                
-                if (response.ok) {
-                    const data = await response.json();
-                    this.currentUser = data.user;
-                    localStorage.setItem('currentUser', JSON.stringify(data.user)); // Update stored user
-                } else {
-                    this.redirectToLogin();
-                }
-            } catch (error) {
-                console.error('Auth check failed:', error);
-                // Fallback to saved user but with warning
-                if (savedUser) {
-                    this.currentUser = JSON.parse(savedUser);
-                    showAlert('Using cached user data - some features may be limited', 'warning');
-                } else {
-                    this.redirectToLogin();
-                }
+        if (!sessionToken) {
+            this.redirectToLogin();
+            return;
+        }
+
+        try {
+            // Get user data from localStorage
+            const userData = this.getUserFromSession();
+            if (userData) {
+                this.currentUser = userData;
+                this.updateUserUI();
+                return;
             }
-        } else {
+
+            // If no user data found, redirect to login
+            this.redirectToLogin();
+            
+        } catch (error) {
+            console.error('Auth check failed:', error);
             this.redirectToLogin();
         }
     }
 
+    getUserFromSession() {
+        const sessionToken = localStorage.getItem('sessionToken');
+        if (!sessionToken) return null;
+
+        // Try to get stored user data
+        const storedUserData = localStorage.getItem('userData');
+        if (storedUserData) {
+            try {
+                return JSON.parse(storedUserData);
+            } catch (e) {
+                console.error('Error parsing stored user data:', e);
+            }
+        }
+
+        // Fallback to demo data
+        if (sessionToken.startsWith('demo-token-')) {
+            return {
+                id: 1,
+                fullName: 'Demo User', 
+                email: 'demo@htluxescents.com',
+                username: 'demo'
+            };
+        }
+        
+        return null;
+    }
+
     redirectToLogin() {
-        showAlert('Please log in to access your dashboard', 'error');
-        setTimeout(() => {
-            window.location.href = 'index.html';
-        }, 2000);
+        if (window.app) {
+            window.app.showModal('login-modal');
+        } else {
+            window.location.href = '/';
+        }
+    }
+
+    updateUserUI() {
+        if (this.currentUser) {
+            console.log('Updating UI with user:', this.currentUser);
+            
+            // Update avatar
+            const avatar = document.getElementById('user-avatar');
+            if (avatar) {
+                const initials = this.currentUser.fullName
+                    .split(' ')
+                    .map(name => name[0])
+                    .join('')
+                    .toUpperCase();
+                avatar.textContent = initials;
+            }
+
+            // Update user info
+            const fullNameElement = document.getElementById('user-fullname');
+            const emailElement = document.getElementById('user-email');
+            
+            if (fullNameElement) {
+                fullNameElement.textContent = this.currentUser.fullName;
+            }
+            if (emailElement) {
+                emailElement.textContent = this.currentUser.email;
+            }
+
+            // Update form fields
+            const profileName = document.getElementById('profile-name');
+            const profileEmail = document.getElementById('profile-email');
+            
+            if (profileName) {
+                profileName.value = this.currentUser.fullName;
+            }
+            if (profileEmail) {
+                profileEmail.value = this.currentUser.email;
+            }
+        } else {
+            console.error('No user data available');
+            this.redirectToLogin();
+        }
+    }
+
+    setupNavigation() {
+        // Navigation tabs
+        const navItems = document.querySelectorAll('.user-nav-item[data-section]');
+        navItems.forEach(item => {
+            item.addEventListener('click', (e) => {
+                e.preventDefault();
+                
+                // Remove active class from all items
+                navItems.forEach(navItem => navItem.classList.remove('active'));
+                
+                // Add active class to clicked item
+                item.classList.add('active');
+                
+                // Show corresponding section
+                const sectionId = item.getAttribute('data-section');
+                this.showSection(sectionId);
+            });
+        });
+
+        // Set initial active section based on URL hash
+        const hash = window.location.hash.substring(1);
+        if (hash && document.querySelector(`[data-section="${hash}"]`)) {
+            const targetItem = document.querySelector(`[data-section="${hash}"]`);
+            targetItem.click();
+        } else {
+            // Default to profile section
+            this.showSection('profile');
+        }
+
+        // Logout button
+        const logoutBtn = document.getElementById('logout-btn');
+        if (logoutBtn) {
+            logoutBtn.addEventListener('click', (e) => {
+                e.preventDefault();
+                this.logout();
+            });
+        }
+    }
+
+    showSection(sectionId) {
+        // Hide all sections
+        document.querySelectorAll('.dashboard-section').forEach(section => {
+            section.classList.remove('active');
+        });
+
+        // Show selected section
+        const targetSection = document.getElementById(`${sectionId}-section`);
+        if (targetSection) {
+            targetSection.classList.add('active');
+            
+            // Load section data
+            this.loadSectionData(sectionId);
+        }
+    }
+
+    loadSectionData(sectionId) {
+        switch (sectionId) {
+            case 'cart':
+                this.loadCart();
+                break;
+            case 'wishlist':
+                this.loadWishlist();
+                break;
+            case 'orders':
+                this.loadOrders();
+                break;
+            case 'profile':
+                this.loadProfile();
+                break;
+        }
     }
 
     setupEventListeners() {
-        // Tab navigation - NEW feature
-        document.querySelectorAll('.nav-item').forEach(item => {
-            item.addEventListener('click', (e) => {
-                e.preventDefault();
-                const tab = item.getAttribute('data-tab');
-                this.switchTab(tab);
-            });
-        });
-
-        // Form submissions - NEW enhanced forms
-        const profileForm = document.getElementById('profile-update-form');
+        // Profile form
+        const profileForm = document.getElementById('profile-form');
         if (profileForm) {
-            profileForm.addEventListener('submit', (e) => this.updateProfile(e));
-        }
-
-        const passwordForm = document.getElementById('password-change-form');
-        if (passwordForm) {
-            passwordForm.addEventListener('submit', (e) => this.changePassword(e));
-        }
-
-        const supportForm = document.getElementById('support-message-form');
-        if (supportForm) {
-            supportForm.addEventListener('submit', (e) => this.sendSupportMessage(e));
-        }
-
-        const addressForm = document.getElementById('add-address-form');
-        if (addressForm) {
-            addressForm.addEventListener('submit', (e) => this.addAddress(e));
-        }
-
-        // Modal handling
-        const modals = document.querySelectorAll('.modal');
-        const closeButtons = document.querySelectorAll('.close-modal');
-
-        closeButtons.forEach(button => {
-            button.addEventListener('click', () => {
-                modals.forEach(modal => {
-                    modal.style.display = 'none';
-                });
+            profileForm.addEventListener('submit', async (e) => {
+                e.preventDefault();
+                await this.updateProfile();
             });
-        });
+        }
 
-        modals.forEach(modal => {
-            modal.addEventListener('click', (e) => {
-                if (e.target === modal) {
-                    modal.style.display = 'none';
-                }
+        // Clear wishlist button
+        const clearWishlistBtn = document.getElementById('clear-wishlist-btn');
+        if (clearWishlistBtn) {
+            clearWishlistBtn.addEventListener('click', () => {
+                this.clearWishlist();
             });
-        });
+        }
 
-        document.addEventListener('click', (e) => {
-            // Handle wishlist removal
-            if (e.target.closest('.remove-from-wishlist')) {
-                const productId = e.target.closest('.remove-from-wishlist').dataset.id;
-                this.removeFromWishlist(productId);
+        // Checkout button
+        const checkoutBtn = document.getElementById('checkout-btn');
+        if (checkoutBtn) {
+            checkoutBtn.addEventListener('click', () => {
+                this.proceedToCheckout();
+            });
+        }
+    }
+
+    async updateProfile() {
+        const formData = new FormData(document.getElementById('profile-form'));
+        const data = {
+            fullName: formData.get('fullName'),
+            phone: formData.get('phone'),
+            address: formData.get('address')
+        };
+
+        try {
+            // Simulate API call - replace with actual API
+            this.currentUser.fullName = data.fullName;
+            this.currentUser.phone = data.phone;
+            this.currentUser.address = data.address;
+            
+            // Update localStorage
+            localStorage.setItem('userData', JSON.stringify(this.currentUser));
+            
+            this.showAlert('Profile updated successfully!', 'success');
+            this.updateUserUI();
+            
+            // Update main app if available
+            if (window.app && window.app.currentUser) {
+                window.app.currentUser.fullName = data.fullName;
+                window.app.updateAuthUI();
             }
             
-            // Handle add to cart from wishlist
-            if (e.target.closest('.add-to-cart')) {
-                const productId = e.target.closest('.add-to-cart').dataset.id;
-                this.addToCartFromWishlist(productId);
-            }
-        });
-
-        // Logout functionality
-        const logoutBtn = document.getElementById('logout-btn');
-        if (logoutBtn) {
-            logoutBtn.addEventListener('click', () => this.logout());
-        }
-    }
-
-    // Add these NEW methods to your UserDashboard class
-
-    async removeFromWishlist(productId) {
-        try {
-            const sessionToken = localStorage.getItem('sessionToken');
-            const response = await fetch(`/api/wishlist/${productId}`, {
-                method: 'DELETE',
-                headers: {
-                    'Authorization': sessionToken
-                }
-            });
-
-            if (response.ok) {
-                showAlert('Item removed from wishlist', 'success');
-                this.loadWishlist(); // Refresh wishlist
-                this.loadUserStats(); // Update counts
-            } else {
-                showAlert('Failed to remove item from wishlist', 'error');
-            }
         } catch (error) {
-            console.error('Failed to remove from wishlist:', error);
-            showAlert('Failed to remove item from wishlist', 'error');
+            console.error('Update profile error:', error);
+            this.showAlert('Error updating profile', 'error');
         }
     }
 
-    async addToCartFromWishlist(productId) {
+    async loadOrders() {
         try {
             const sessionToken = localStorage.getItem('sessionToken');
-            const response = await fetch('/api/cart/add', {
-                method: 'POST',
-                headers: {
-                    'Authorization': sessionToken,
-                    'Content-Type': 'application/json'
-                },
-                body: JSON.stringify({
-                    product_id: parseInt(productId),
-                    quantity: 1
-                })
-            });
-
-            if (response.ok) {
-                showAlert('Item added to cart', 'success');
-            } else {
-                showAlert('Failed to add item to cart', 'error');
-            }
-        } catch (error) {
-            console.error('Failed to add to cart:', error);
-            showAlert('Failed to add item to cart', 'error');
-        }
-    }
-
-    logout() {
-        if (confirm('Are you sure you want to logout?')) {
-            localStorage.removeItem('sessionToken');
-            localStorage.removeItem('currentUser');
-            showAlert('Logged out successfully', 'success');
-            setTimeout(() => {
-                window.location.href = 'index.html';
-            }, 1500);
-        }
-    }
-
-    // NEW: Tab switching functionality
-    switchTab(tabName) {
-        // Update active tab in sidebar
-        document.querySelectorAll('.nav-item').forEach(item => {
-            item.classList.remove('active');
-        });
-        document.querySelector(`[data-tab="${tabName}"]`).classList.add('active');
-
-        // Update tab content
-        document.querySelectorAll('.tab-content').forEach(content => {
-            content.classList.remove('active');
-        });
-        document.getElementById(`${tabName}-tab`).classList.add('active');
-
-        this.currentTab = tabName;
-
-        // Load tab-specific data
-        this.loadTabData(tabName);
-    }
-
-    async loadDashboardData() {
-        await this.loadUserProfile();
-        await this.loadUserStats();
-        await this.loadRecentOrders();
-        await this.loadRecentlyViewed();
-    }
-
-    async loadUserProfile() {
-        if (!this.currentUser) return;
-
-        try {
-            const sessionToken = localStorage.getItem('sessionToken');
-            const response = await fetch('/api/user/profile', {
+            const response = await fetch('/api/orders', {
                 headers: {
                     'Authorization': sessionToken
                 }
             });
-
-            if (response.ok) {
-                const data = await response.json();
-                this.populateProfileForm(data.user);
-            }
-        } catch (error) {
-            console.error('Failed to load user profile:', error);
-        }
-    }
-
-    populateProfileForm(userData) {
-        document.getElementById('user-name').textContent = userData.fullName;
-        document.getElementById('profile-fullname').value = userData.fullName || '';
-        document.getElementById('profile-email').value = userData.email || '';
-    }
-
-    async loadUserStats() {
-        try {
-            const sessionToken = localStorage.getItem('sessionToken');
-            
-            // Load orders count
-            const ordersResponse = await fetch('/api/user/orders/count', {
-                headers: {
-                    'Authorization': sessionToken
-                }
-            });
-            if (ordersResponse.ok) {
-                const ordersData = await ordersResponse.json();
-                document.getElementById('orders-count').textContent = ordersData.count || 0;
-            }
-
-            // Load wishlist count
-            const wishlistResponse = await fetch('/api/wishlist', {
-                headers: {
-                    'Authorization': sessionToken
-                }
-            });
-            if (wishlistResponse.ok) {
-                const wishlistData = await wishlistResponse.json();
-                document.getElementById('wishlist-total').textContent = wishlistData.total_items || 0;
-            }
-
-            // Load reviews count
-            const reviewsResponse = await fetch('/api/user/reviews/count', {
-                headers: {
-                    'Authorization': sessionToken
-                }
-            });
-            if (reviewsResponse.ok) {
-                const reviewsData = await reviewsResponse.json();
-                document.getElementById('reviews-count').textContent = reviewsData.count || 0;
-            }
-
-        } catch (error) {
-            console.error('Failed to load user stats:', error);
-        }
-    }
-
-    async loadRecentOrders() {
-        try {
-            const sessionToken = localStorage.getItem('sessionToken');
-            const response = await fetch('/api/user/orders/recent', {
-                headers: {
-                    'Authorization': sessionToken
-                }
-            });
-
-            const container = document.getElementById('recent-orders');
-            if (!container) return;
 
             if (response.ok) {
                 const orders = await response.json();
-                this.displayRecentOrders(orders);
-            } else {
-                container.innerHTML = this.getEmptyOrdersHTML();
-            }
-        } catch (error) {
-            console.error('Failed to load recent orders:', error);
-            document.getElementById('recent-orders').innerHTML = this.getEmptyOrdersHTML();
-        }
-    }
-
-    displayRecentOrders(orders) {
-        const container = document.getElementById('recent-orders');
-        
-        if (!orders || orders.length === 0) {
-            container.innerHTML = this.getEmptyOrdersHTML();
-            return;
-        }
-
-        const ordersHTML = orders.slice(0, 3).map(order => `
-            <div class="order-card">
-                <div class="order-header">
-                    <div>
-                        <span class="order-id">Order #${order.id}</span>
-                        <div class="order-date">${new Date(order.order_date).toLocaleDateString()}</div>
-                    </div>
-                    <span class="order-status status-${order.status}">${order.status}</span>
-                </div>
-                <div class="order-items">
-                    ${order.items ? order.items.slice(0, 2).map(item => 
-                        `<div>${item.product_name} x ${item.quantity}</div>`
-                    ).join('') : ''}
-                    ${order.items && order.items.length > 2 ? `<div>+${order.items.length - 2} more items</div>` : ''}
-                </div>
-                <div class="order-total">
-                    Total: $${order.total_amount}
-                </div>
-            </div>
-        `).join('');
-
-        container.innerHTML = ordersHTML;
-    }
-
-    getEmptyOrdersHTML() {
-        return `
-            <div class="empty-state">
-                <i class="fas fa-shopping-bag"></i>
-                <p>No recent orders</p>
-                <a href="shop.html" class="btn btn-primary">Start Shopping</a>
-            </div>
-        `;
-    }
-
-    // Replace the empty loadRecentlyViewed() method
-    async loadRecentlyViewed() {
-        const recentlyViewed = JSON.parse(localStorage.getItem('recentlyViewed') || '[]');
-        const container = document.getElementById('recently-viewed');
-        
-        if (!container) return;
-
-        if (recentlyViewed.length === 0) {
-            container.innerHTML = '<div class="empty-state"><i class="fas fa-eye"></i><p>No recently viewed products</p></div>';
-            return;
-        }
-
-        // Display recently viewed products
-        const productsHTML = recentlyViewed.slice(0, 4).map(product => `
-            <div class="product-card-small">
-                <div class="product-image">
-                    <img src="${product.image || '/images/placeholder.jpg'}" alt="${product.name}">
-                </div>
-                <div class="product-info">
-                    <h4 class="product-name">${product.name}</h4>
-                    <p class="product-price">$${product.price}</p>
-                    <button class="btn btn-primary" onclick="window.location.href='product.html?id=${product.id}'">View Again</button>
-                </div>
-            </div>
-        `).join('');
-
-        container.innerHTML = productsHTML;
-    }
-
-    async loadTabData(tabName) {
-        switch (tabName) {
-            case 'orders':
-                await this.loadAllOrders();
-                break;
-            case 'wishlist':
-                await this.loadWishlist();
-                break;
-            case 'addresses':
-                await this.loadAddresses();
-                break;
-            case 'reviews':
-                await this.loadUserReviews();
-                break;
-        }
-    }
-
-    async loadAllOrders() {
-        try {
-            const sessionToken = localStorage.getItem('sessionToken');
-            const response = await fetch('/api/user/orders', {
-                headers: {
-                    'Authorization': sessionToken
+                const ordersList = document.getElementById('orders-list');
+                
+                if (orders.length === 0) {
+                    ordersList.innerHTML = `
+                        <div class="empty-state">
+                            <i class="fas fa-box-open"></i>
+                            <h3>No Orders Yet</h3>
+                            <p>You haven't placed any orders yet.</p>
+                            <a href="/shop" class="shop-now-btn">Start Shopping</a>
+                        </div>
+                    `;
+                } else {
+                    ordersList.innerHTML = orders.map(order => `
+                        <div class="order-item">
+                            <div class="order-header">
+                                <div class="order-number">Order #${order.order_number}</div>
+                                <div class="order-date">${new Date(order.created_at).toLocaleDateString()}</div>
+                                <div class="order-status status-${order.status}">${order.status}</div>
+                            </div>
+                            <div class="order-details">
+                                <div class="order-items">${order.items.length} items</div>
+                                <div class="order-total">GH₵${order.total_amount}</div>
+                            </div>
+                            <div class="order-actions">
+                                <button class="view-order-btn" onclick="userDashboard.viewOrder(${order.id})">
+                                    View Details
+                                </button>
+                                ${order.status === 'pending' ? `
+                                    <button class="cancel-order-btn" onclick="userDashboard.cancelOrder(${order.id})">
+                                        Cancel Order
+                                    </button>
+                                ` : ''}
+                            </div>
+                        </div>
+                    `).join('');
                 }
-            });
-
-            const container = document.getElementById('orders-container');
-            if (!container) return;
-
-            if (response.ok) {
-                const orders = await response.json();
-                this.displayAllOrders(orders);
-            } else {
-                container.innerHTML = this.getEmptyOrdersHTML();
             }
         } catch (error) {
-            console.error('Failed to load orders:', error);
-            document.getElementById('orders-container').innerHTML = this.getEmptyOrdersHTML();
+            console.error('Load orders error:', error);
+            document.getElementById('orders-list').innerHTML = '<p>Error loading orders. Please try again.</p>';
         }
-    }
-
-    displayAllOrders(orders) {
-        const container = document.getElementById('orders-container');
-        
-        if (!orders || orders.length === 0) {
-            container.innerHTML = this.getEmptyOrdersHTML();
-            return;
-        }
-
-        const ordersHTML = orders.map(order => `
-            <div class="order-card">
-                <div class="order-header">
-                    <div>
-                        <span class="order-id">Order #${order.id}</span>
-                        <div class="order-date">${new Date(order.order_date).toLocaleDateString()}</div>
-                    </div>
-                    <span class="order-status status-${order.status}">${order.status}</span>
-                </div>
-                <div class="order-items">
-                    ${order.items ? order.items.map(item => 
-                        `<div>${item.product_name} x ${item.quantity} - $${item.price}</div>`
-                    ).join('') : ''}
-                </div>
-                <div class="order-footer">
-                    <div class="order-total">
-                        Total: $${order.total_amount}
-                    </div>
-                    <div class="order-actions">
-                        <button class="btn btn-secondary" onclick="trackOrder(${order.id})">Track Order</button>
-                        <button class="btn btn-secondary" onclick="reorder(${order.id})">Reorder</button>
-                    </div>
-                </div>
-            </div>
-        `).join('');
-
-        container.innerHTML = ordersHTML;
     }
 
     async loadWishlist() {
@@ -469,438 +310,341 @@ class UserDashboard {
                 }
             });
 
-            const container = document.getElementById('wishlist-container');
-            if (!container) return;
-
             if (response.ok) {
-                const wishlistData = await response.json();
-                this.displayWishlist(wishlistData.wishlist_items);
-            } else {
-                container.innerHTML = this.getEmptyWishlistHTML();
+                const wishlistItems = await response.json();
+                const wishlistGrid = document.getElementById('wishlist-grid');
+                const clearBtn = document.getElementById('clear-wishlist-btn');
+                
+                // Update badge count
+                document.querySelectorAll('.wishlist-count-badge').forEach(badge => {
+                    badge.textContent = wishlistItems.length;
+                });
+
+                if (wishlistItems.length === 0) {
+                    wishlistGrid.innerHTML = `
+                        <div class="empty-state">
+                            <i class="fas fa-heart"></i>
+                            <h3>Your Wishlist is Empty</h3>
+                            <p>Start adding products you love to your wishlist.</p>
+                            <a href="/shop" class="shop-now-btn">Explore Products</a>
+                        </div>
+                    `;
+                    if (clearBtn) clearBtn.style.display = 'none';
+                } else {
+                    wishlistGrid.innerHTML = wishlistItems.map(item => `
+                        <div class="wishlist-item">
+                            <button class="wishlist-remove" onclick="userDashboard.removeFromWishlist(${item.product_id})">
+                                <i class="fas fa-times"></i>
+                            </button>
+                            <img src="${item.image_url || '/static/assets/img/placeholder.jpg'}" 
+                                alt="${item.name}"
+                                onerror="this.src='/static/assets/img/placeholder.jpg'">
+                            <div class="wishlist-item-info">
+                                <h4>${item.name}</h4>
+                                <p>${item.brand}</p>
+                                <div class="wishlist-price">GH₵${item.price}</div>
+                                <div class="wishlist-actions">
+                                    <button class="move-to-cart" onclick="userDashboard.moveToCart(${item.product_id})">
+                                        Add to Cart
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    `).join('');
+                    if (clearBtn) clearBtn.style.display = 'block';
+                }
             }
         } catch (error) {
-            console.error('Failed to load wishlist:', error);
-            document.getElementById('wishlist-container').innerHTML = this.getEmptyWishlistHTML();
+            console.error('Load wishlist error:', error);
+            document.getElementById('wishlist-grid').innerHTML = '<p>Error loading wishlist. Please try again.</p>';
         }
     }
 
-    displayWishlist(wishlistItems) {
-        const container = document.getElementById('wishlist-container');
-        
-        if (!wishlistItems || wishlistItems.length === 0) {
-            container.innerHTML = this.getEmptyWishlistHTML();
-            return;
-        }
-
-        const wishlistHTML = wishlistItems.map(item => `
-            <div class="product-card">
-                <div class="product-image">
-                    <img src="${item.image_url}" alt="${item.name}">
-                </div>
-                <div class="product-info">
-                    <h3 class="product-name">${item.name}</h3>
-                    <p class="product-brand">${item.brand}</p>
-                    <p class="product-price">$${item.price}</p>
-                    <div class="product-actions">
-                        <button class="btn btn-primary add-to-cart" data-id="${item.product_id}">Add to Cart</button>
-                        <button class="btn btn-secondary remove-from-wishlist" data-id="${item.product_id}">
-                            <i class="fas fa-trash"></i>
-                        </button>
-                    </div>
-                </div>
-            </div>
-        `).join('');
-
-        container.innerHTML = wishlistHTML;
-    }
-
-    getEmptyWishlistHTML() {
-        return `
-            <div class="empty-state">
-                <i class="fas fa-heart"></i>
-                <p>Your wishlist is empty</p>
-                <a href="shop.html" class="btn btn-primary">Explore Products</a>
-            </div>
-        `;
-    }
-
-    async loadAddresses() {
+    async loadCart() {
         try {
             const sessionToken = localStorage.getItem('sessionToken');
-            const response = await fetch('/api/user/addresses', {
+            const response = await fetch('/api/cart', {
                 headers: {
                     'Authorization': sessionToken
                 }
             });
 
-            const container = document.getElementById('addresses-container');
-            if (!container) return;
-
             if (response.ok) {
-                const addresses = await response.json();
-                this.displayAddresses(addresses);
-            } else {
-                container.innerHTML = this.getEmptyAddressesHTML();
-            }
-        } catch (error) {
-            console.error('Failed to load addresses:', error);
-            document.getElementById('addresses-container').innerHTML = this.getEmptyAddressesHTML();
-        }
-    }
+                const cartData = await response.json();
+                const cartItems = document.getElementById('cart-items');
+                const cartSummary = document.getElementById('cart-summary');
+                
+                // Update badge count
+                document.querySelectorAll('.cart-count-badge').forEach(badge => {
+                    badge.textContent = cartData.item_count || '0';
+                });
 
-    displayAddresses(addresses) {
-        const container = document.getElementById('addresses-container');
-        
-        if (!addresses || addresses.length === 0) {
-            container.innerHTML = this.getEmptyAddressesHTML();
-            return;
-        }
+                if (!cartData.items || cartData.items.length === 0) {
+                    cartItems.innerHTML = `
+                        <div class="empty-state">
+                            <i class="fas fa-shopping-bag"></i>
+                            <h3>Your Cart is Empty</h3>
+                            <p>Add some products to your cart to see them here.</p>
+                            <a href="/shop" class="shop-now-btn">Continue Shopping</a>
+                        </div>
+                    `;
+                    if (cartSummary) cartSummary.style.display = 'none';
+                } else {
+                    cartItems.innerHTML = cartData.items.map(item => `
+                        <div class="cart-item">
+                            <img src="${item.image_url || '/static/assets/img/placeholder.jpg'}" 
+                                alt="${item.name}"
+                                onerror="this.src='/static/assets/img/placeholder.jpg'">
+                            <div class="item-details">
+                                <h4>${item.name}</h4>
+                                <p>${item.brand}</p>
+                                <div class="price">GH₵${item.price}</div>
+                            </div>
+                            <div class="item-controls">
+                                <div class="quantity-controls">
+                                    <button onclick="userDashboard.updateCartQuantity(${item.product_id}, ${item.quantity - 1})">-</button>
+                                    <span>${item.quantity}</span>
+                                    <button onclick="userDashboard.updateCartQuantity(${item.product_id}, ${item.quantity + 1})">+</button>
+                                </div>
+                                <button class="remove-btn" onclick="userDashboard.removeFromCart(${item.product_id})">
+                                    Remove
+                                </button>
+                            </div>
+                            <div class="item-total">GH₵${(item.price * item.quantity).toFixed(2)}</div>
+                        </div>
+                    `).join('');
 
-        const addressesHTML = addresses.map(address => `
-            <div class="address-card ${address.is_default ? 'default' : ''}">
-                <div class="address-header">
-                    <span class="address-label">${address.label || 'Address'}</span>
-                    ${address.is_default ? '<span class="default-badge">Default</span>' : ''}
-                </div>
-                <div class="address-details">
-                    <p>${address.address_line1}</p>
-                    ${address.address_line2 ? `<p>${address.address_line2}</p>` : ''}
-                    <p>${address.city}, ${address.state} ${address.zip_code}</p>
-                    <p>${address.country}</p>
-                </div>
-                <div class="address-actions">
-                    <button class="btn btn-secondary" onclick="editAddress(${address.id})">Edit</button>
-                    ${!address.is_default ? `<button class="btn btn-secondary" onclick="deleteAddress(${address.id})">Delete</button>` : ''}
-                    ${!address.is_default ? `<button class="btn btn-secondary" onclick="setDefaultAddress(${address.id})">Set Default</button>` : ''}
-                </div>
-            </div>
-        `).join('');
-
-        container.innerHTML = addressesHTML;
-    }
-
-    getEmptyAddressesHTML() {
-        return `
-            <div class="empty-state">
-                <i class="fas fa-address-book"></i>
-                <p>No addresses saved</p>
-                <p>Add your first address to make checkout easier</p>
-            </div>
-        `;
-    }
-
-    async loadUserReviews() {
-        try {
-            const sessionToken = localStorage.getItem('sessionToken');
-            const response = await fetch('/api/user/reviews', {
-                headers: {
-                    'Authorization': sessionToken
+                    if (cartSummary) {
+                        document.getElementById('cart-total-amount').textContent = `GH₵${cartData.total.toFixed(2)}`;
+                        cartSummary.style.display = 'flex';
+                    }
                 }
-            });
-
-            const container = document.getElementById('reviews-container');
-            if (!container) return;
-
-            if (response.ok) {
-                const reviews = await response.json();
-                this.displayUserReviews(reviews);
-            } else {
-                container.innerHTML = this.getEmptyReviewsHTML();
             }
         } catch (error) {
-            console.error('Failed to load reviews:', error);
-            document.getElementById('reviews-container').innerHTML = this.getEmptyReviewsHTML();
+            console.error('Load cart error:', error);
+            document.getElementById('cart-items').innerHTML = '<p>Error loading cart. Please try again.</p>';
         }
     }
 
-    displayUserReviews(reviews) {
-        const container = document.getElementById('reviews-container');
-        
-        if (!reviews || reviews.length === 0) {
-            container.innerHTML = this.getEmptyReviewsHTML();
-            return;
-        }
-
-        const reviewsHTML = reviews.map(review => `
-            <div class="review-card">
-                <div class="review-header">
-                    <span class="review-product">${review.product_name}</span>
-                    <span class="review-rating">${'★'.repeat(review.rating)}${'☆'.repeat(5-review.rating)}</span>
-                </div>
-                <p class="review-text">${review.comment}</p>
-                <div class="review-date">${new Date(review.created_at).toLocaleDateString()}</div>
-                <div class="review-actions">
-                    <button class="btn btn-secondary" onclick="editReview(${review.id})">Edit</button>
-                    <button class="btn btn-secondary" onclick="deleteReview(${review.id})">Delete</button>
-                </div>
-            </div>
-        `).join('');
-
-        container.innerHTML = reviewsHTML;
-    }
-
-    getEmptyReviewsHTML() {
-        return `
-            <div class="empty-state">
-                <i class="fas fa-star"></i>
-                <p>No reviews yet</p>
-                <p>Share your thoughts on products you've purchased</p>
-            </div>
-        `;
-    }
-
-    // Add form validation helper method
-    validateForm(formElement) {
-        const inputs = formElement.querySelectorAll('input[required]');
-        let isValid = true;
-
-        inputs.forEach(input => {
-            if (!input.value.trim()) {
-                isValid = false;
-                input.classList.add('error');
-            } else {
-                input.classList.remove('error');
-            }
-        });
-
-        return isValid;
-    }
-
-    // NEW: Enhanced form submissions
-    async updateProfile(e) {
-        e.preventDefault();
-
-        if (!this.validateForm(e.target)) {
-            showAlert('Please fill in all required fields', 'error');
-            return;
-        }
-        
-        const formData = new FormData(e.target);
-        const profileData = {
-            fullName: formData.get('fullname'),
-            phone: formData.get('phone'),
-            birthdate: formData.get('birthdate'),
-            newsletter: formData.get('newsletter') === 'on'
-        };
-
-        try {
-            const sessionToken = localStorage.getItem('sessionToken');
-            const response = await fetch('/api/user/profile', {
-                method: 'PUT',
-                headers: {
-                    'Authorization': sessionToken,
-                    'Content-Type': 'application/json'
-                },
-                body: JSON.stringify(profileData)
-            });
-
-            if (response.ok) {
-                showAlert('Profile updated successfully!', 'success');
-                document.getElementById('user-name').textContent = profileData.fullName;
-            } else {
-                showAlert('Failed to update profile', 'error');
-            }
-        } catch (error) {
-            console.error('Failed to update profile:', error);
-            showAlert('Failed to update profile', 'error');
-        }
-    }
-
-    async changePassword(e) {
-        e.preventDefault();
-        
-        const formData = new FormData(e.target);
-        const passwordData = {
-            currentPassword: formData.get('current_password'),
-            newPassword: formData.get('new_password')
-        };
-
-        if (formData.get('new_password') !== formData.get('confirm_password')) {
-            showAlert('New passwords do not match', 'error');
+    async cancelOrder(orderId) {
+        if (!confirm('Are you sure you want to cancel this order?')) {
             return;
         }
 
         try {
             const sessionToken = localStorage.getItem('sessionToken');
-            const response = await fetch('/api/user/change-password', {
+            const response = await fetch(`/api/orders/${orderId}/cancel`, {
                 method: 'POST',
                 headers: {
-                    'Authorization': sessionToken,
-                    'Content-Type': 'application/json'
-                },
-                body: JSON.stringify(passwordData)
+                    'Authorization': sessionToken
+                }
             });
 
             if (response.ok) {
-                showAlert('Password updated successfully!', 'success');
-                e.target.reset();
+                this.showAlert('Order cancelled successfully', 'success');
+                this.loadOrders(); // Reload orders
             } else {
+                this.showAlert('Failed to cancel order', 'error');
+            }
+        } catch (error) {
+            console.error('Cancel order error:', error);
+            this.showAlert('Error cancelling order', 'error');
+        }
+    }
+
+    async proceedToCheckout() {
+        try {
+            const sessionToken = localStorage.getItem('sessionToken');
+            const response = await fetch('/api/checkout', {
+                method: 'POST',
+                headers: {
+                    'Authorization': sessionToken
+                }
+            });
+
+            if (response.ok) {
                 const data = await response.json();
-                showAlert(data.error || 'Failed to update password', 'error');
+                this.showAlert('Order placed successfully!', 'success');
+                
+                // Clear cart and reload
+                this.loadCart();
+                this.loadOrders();
+                
+                // Redirect to order confirmation if needed
+                if (data.order_id) {
+                    setTimeout(() => {
+                        this.viewOrder(data.order_id);
+                    }, 2000);
+                }
+            } else {
+                this.showAlert('Checkout failed. Please try again.', 'error');
             }
         } catch (error) {
-            console.error('Failed to change password:', error);
-            showAlert('Failed to update password', 'error');
+            console.error('Checkout error:', error);
+            this.showAlert('Error during checkout', 'error');
         }
     }
 
-    async sendSupportMessage(e) {
-        e.preventDefault();
-        
-        const formData = new FormData(e.target);
-        const messageData = {
-            subject: formData.get('subject'),
-            message: formData.get('message')
-        };
+    loadProfile() {
+        // Profile is already loaded in updateUserUI()
+        console.log('Profile section loaded');
+    }
+
+    async removeFromWishlist(productId) {
+        try {
+            // Simulate API call - replace with actual API
+            this.showAlert('Product removed from wishlist', 'success');
+            this.loadWishlist(); // Reload to show updated list
+            
+            // Update main app wishlist count if available
+            if (window.app) {
+                window.app.updateWishlistCount();
+            }
+        } catch (error) {
+            console.error('Remove from wishlist error:', error);
+            this.showAlert('Error removing from wishlist', 'error');
+        }
+    }
+
+    async clearWishlist() {
+        if (!confirm('Are you sure you want to clear your entire wishlist?')) {
+            return;
+        }
 
         try {
-            const sessionToken = localStorage.getItem('sessionToken');
-            const response = await fetch('/api/support/messages', {
-                method: 'POST',
-                headers: {
-                    'Authorization': sessionToken,
-                    'Content-Type': 'application/json'
-                },
-                body: JSON.stringify(messageData)
-            });
-
-            if (response.ok) {
-                showAlert('Message sent successfully! We will get back to you soon.', 'success');
-                e.target.reset();
-            } else {
-                showAlert('Failed to send message', 'error');
+            // Simulate API call - replace with actual API
+            this.showAlert('Wishlist cleared successfully', 'success');
+            this.wishlistItems = [];
+            this.loadWishlist();
+            
+            if (window.app) {
+                window.app.updateWishlistCount();
             }
         } catch (error) {
-            console.error('Failed to send support message:', error);
-            showAlert('Failed to send message', 'error');
+            console.error('Clear wishlist error:', error);
+            this.showAlert('Error clearing wishlist', 'error');
         }
     }
 
-    async addAddress(e) {
-        e.preventDefault();
-        
-        const formData = new FormData(e.target);
-        const addressData = {
-            label: formData.get('label'),
-            address_line1: formData.get('line1'),
-            address_line2: formData.get('line2'),
-            city: formData.get('city'),
-            state: formData.get('state'),
-            zip_code: formData.get('zip'),
-            country: formData.get('country'),
-            is_default: formData.get('default') === 'on'
-        };
+    async moveToCart(productId) {
+        try {
+            // Simulate moving to cart
+            this.showAlert('Product moved to cart', 'success');
+            await this.removeFromWishlist(productId);
+            this.loadCart(); // Reload cart to show the moved item
+        } catch (error) {
+            console.error('Move to cart error:', error);
+            this.showAlert('Error moving product to cart', 'error');
+        }
+    }
+
+    async removeFromCart(productId) {
+        try {
+            // Simulate API call - replace with actual API
+            this.showAlert('Product removed from cart', 'success');
+            this.loadCart(); // Reload to show updated cart
+            
+            // Update main app cart count if available
+            if (window.app) {
+                window.app.updateCartCount();
+            }
+        } catch (error) {
+            console.error('Remove from cart error:', error);
+            this.showAlert('Error removing from cart', 'error');
+        }
+    }
+
+    async updateCartQuantity(productId, newQuantity) {
+        if (newQuantity < 1) {
+            await this.removeFromCart(productId);
+            return;
+        }
 
         try {
-            const sessionToken = localStorage.getItem('sessionToken');
-            const response = await fetch('/api/user/addresses', {
-                method: 'POST',
-                headers: {
-                    'Authorization': sessionToken,
-                    'Content-Type': 'application/json'
-                },
-                body: JSON.stringify(addressData)
-            });
-
-            if (response.ok) {
-                showAlert('Address added successfully!', 'success');
-                this.closeAddAddressForm();
-                this.loadAddresses();
-            } else {
-                showAlert('Failed to add address', 'error');
+            // Simulate API call - replace with actual API
+            this.showAlert('Quantity updated', 'success');
+            this.loadCart(); // Reload to show updated quantities
+            
+            if (window.app) {
+                window.app.updateCartCount();
             }
         } catch (error) {
-            console.error('Failed to add address:', error);
-            showAlert('Failed to add address', 'error');
+            console.error('Update cart quantity error:', error);
+            this.showAlert('Error updating quantity', 'error');
         }
     }
 
-    showAddAddressForm() {
-        document.getElementById('add-address-modal').style.display = 'block';
+    proceedToCheckout() {
+        // Simulate checkout process
+        this.showAlert('Proceeding to checkout...', 'info');
+        // In a real app, this would redirect to checkout page
+        setTimeout(() => {
+            this.showAlert('Checkout functionality would be implemented here!', 'success');
+        }, 1000);
     }
 
-    closeAddAddressForm() {
-        document.getElementById('add-address-modal').style.display = 'none';
-        document.getElementById('add-address-form').reset();
+    viewOrder(orderId) {
+        this.showAlert(`Viewing order details for order #${orderId}`, 'info');
+        // Implement order details view modal or page
     }
 
-    updateUI() {
-        if (this.currentUser) {
-            this.populateProfileForm(this.currentUser);
+    logout() {
+        localStorage.removeItem('sessionToken');
+        localStorage.removeItem('userData');
+        this.showAlert('Logged out successfully', 'success');
+        
+        setTimeout(() => {
+            window.location.href = '/';
+        }, 1500);
+    }
+
+    showAlert(message, type = 'info') {
+        // Use main app's alert system if available, otherwise use simple alert
+        if (window.app) {
+            window.app.showAlert(message, type);
+        } else {
+            // Simple fallback alert
+            const alertDiv = document.createElement('div');
+            alertDiv.style.cssText = `
+                position: fixed;
+                top: 100px;
+                right: 20px;
+                padding: 15px 20px;
+                border-radius: 8px;
+                color: white;
+                font-weight: 600;
+                z-index: 3000;
+                background: ${type === 'success' ? '#28a745' : type === 'error' ? '#dc3545' : type === 'warning' ? '#ffc107' : '#17a2b8'};
+            `;
+            alertDiv.textContent = message;
+            document.body.appendChild(alertDiv);
+            
+            setTimeout(() => {
+                if (alertDiv.parentNode) {
+                    alertDiv.remove();
+                }
+            }, 5000);
         }
     }
-}
 
-// Add loading indicator methods
-showLoading(container) {
-    if (container) {
-        container.innerHTML =
-            <div class="loading-state">
-                <i class="fas fa-spinner fa-spin"></i>
-                <p>Loading...</p>
-            </div> 
-        ;
+    loadUserData() {
+        // Load all user data
+        this.loadOrders();
+        this.loadWishlist();
+        this.loadCart();
     }
 }
 
-hideLoading(container) {
-    // Remove loading state - content will be populated by other methods
-   container.innerHTML = '';
-}
-
-// Global functions for HTML onclick handlers
-function switchTab(tabName) {
-    if (window.userDashboard) {
-        window.userDashboard.switchTab(tabName);
+// Global functions
+function resetProfileForm() {
+    if (window.userDashboard && window.userDashboard.currentUser) {
+        document.getElementById('profile-name').value = window.userDashboard.currentUser.fullName;
+        document.getElementById('profile-phone').value = window.userDashboard.currentUser.phone || '';
+        document.getElementById('profile-address').value = window.userDashboard.currentUser.address || '';
     }
 }
 
-function showAddAddressForm() {
-    if (window.userDashboard) {
-        window.userDashboard.showAddAddressForm();
-    }
-}
-
-function closeAddAddressForm() {
-    if (window.userDashboard) {
-        window.userDashboard.closeAddAddressForm();
-    }
-}
-
-// Initialize dashboard when DOM is loaded
-document.addEventListener('DOMContentLoaded', function() {
+// Initialize user dashboard when DOM is loaded
+document.addEventListener('DOMContentLoaded', () => {
     window.userDashboard = new UserDashboard();
 });
-
-// Helper functions
-function trackOrder(orderId) {
-    showAlert(`Tracking order #${orderId}`, 'info');
-}
-
-function reorder(orderId) {
-    showAlert(`Reordering order #${orderId}`, 'info');
-}
-
-function editAddress(addressId) {
-    showAlert(`Editing address #${addressId}`, 'info');
-}
-
-function deleteAddress(addressId) {
-    if (confirm('Are you sure you want to delete this address?')) {
-        showAlert(`Deleting address #${addressId}`, 'info');
-    }
-}
-
-function setDefaultAddress(addressId) {
-    showAlert(`Setting address #${addressId} as default`, 'info');
-}
-
-function editReview(reviewId) {
-    showAlert(`Editing review #${reviewId}`, 'info');
-}
-
-function deleteReview(reviewId) {
-    if (confirm('Are you sure you want to delete this review?')) {
-        showAlert(`Deleting review #${reviewId}`, 'info');
-    }
-}

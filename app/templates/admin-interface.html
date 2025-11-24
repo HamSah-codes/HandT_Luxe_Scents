@@ -4,7 +4,8 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Admin Dashboard | H&T Luxe Scents</title>
-    <link rel="stylesheet" href="static/css/admin.css">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/admin.css') }}">
     <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;500;600&family=Montserrat:wght@300;400;500&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
 </head>
@@ -26,7 +27,7 @@
                     </div>
                     <button type="submit" class="login-btn">Login</button>
                 </form>
-                <p class="login-note">Default credentials: H&T_Luxe_Scents / HamSahLati</p>
+                <p class="login-note">Default credentials: admin / admin123</p>
             </div>
         </div>
     </div>
@@ -45,30 +46,34 @@
             </div>
         </header>
 
-        <!-- Admin Sidebar -->
+        <!-- Admin Container -->
         <div class="admin-container">
+            <!-- Admin Sidebar -->
             <aside class="admin-sidebar">
                 <nav class="sidebar-nav">
                     <a href="#dashboard" class="nav-item active" data-section="dashboard">
-                        <i class="fas fa-tachometer-alt"></i> Dashboard
+                        <i class="fas fa-tachometer-alt"></i>
+                        Dashboard
                     </a>
                     <a href="#products" class="nav-item" data-section="products">
-                        <i class="fas fa-box"></i> Products
+                        <i class="fas fa-box"></i>
+                        Products
                     </a>
                     <a href="#categories" class="nav-item" data-section="categories">
-                        <i class="fas fa-tags"></i> Categories
+                        <i class="fas fa-tags"></i>
+                        Categories
                     </a>
                     <a href="#messages" class="nav-item" data-section="messages">
-                        <i class="fas fa-envelope"></i> Messages
+                        <i class="fas fa-envelope"></i>
+                        Messages
                     </a>
                     <a href="#reviews" class="nav-item" data-section="reviews">
-                        <i class="fas fa-star"></i> Reviews
+                        <i class="fas fa-star"></i>
+                        Reviews
                     </a>
-                    <a href="#wishlists" class="nav-item" data-section="wishlists">
-                        <i class="fas fa-heart"></i> User Wishlists
-                    </a>
-                    <a href="#discounts" class="nav-item" data-section="discounts">
-                        <i class="fas fa-percent"></i> Discounts
+                    <a href="#orders" class="nav-item" data-section="orders">
+                        <i class="fas fa-shopping-bag"></i>
+                        Orders
                     </a>
                 </nav>
             </aside>
@@ -92,8 +97,8 @@
                             <p class="stat-number" id="total-reviews">0</p>
                         </div>
                         <div class="stat-card">
-                            <h3>Active Users</h3>
-                            <p class="stat-number" id="active-users">0</p>
+                            <h3>Total Users</h3>
+                            <p class="stat-number" id="total-users">0</p>
                         </div>
                     </div>
                 </section>
@@ -102,41 +107,96 @@
                 <section id="products" class="admin-section">
                     <div class="section-header">
                         <h2>Product Management</h2>
-                        <button class="add-btn" id="add-product-btn">Add New Product</button>
+                        <button class="add-btn" id="add-product-btn">
+                            <i class="fas fa-plus"></i>
+                            Add New Product
+                        </button>
                     </div>
                     
                     <!-- Add Product Form -->
                     <div id="add-product-form" class="form-modal" style="display: none;">
-                        <form id="product-form">
+                        <form id="product-form" enctype="multipart/form-data">
                             <div class="form-row">
                                 <div class="form-group">
-                                    <label for="product-name">Product Name</label>
-                                    <input type="text" id="product-name" required>
+                                    <label for="product-name">Product Name *</label>
+                                    <input type="text" id="product-name" name="name" required>
                                 </div>
                                 <div class="form-group">
-                                    <label for="product-brand">Brand</label>
-                                    <input type="text" id="product-brand" required>
+                                    <label for="product-brand">Brand *</label>
+                                    <input type="text" id="product-brand" name="brand" required>
                                 </div>
                             </div>
                             <div class="form-row">
                                 <div class="form-group">
-                                    <label for="product-price">Price</label>
-                                    <input type="number" id="product-price" step="0.01" required>
+                                    <label for="product-price">Price (GH₵) *</label>
+                                    <input type="number" id="product-price" name="price" step="0.01" min="0" required>
                                 </div>
                                 <div class="form-group">
-                                    <label for="product-category">Category</label>
-                                    <select id="product-category" required>
+                                    <label for="product-category">Category *</label>
+                                    <select id="product-category" name="category_id" required>
                                         <option value="">Select Category</option>
                                     </select>
                                 </div>
                             </div>
-                            <div class="form-group">
-                                <label for="product-description">Description</label>
-                                <textarea id="product-description" rows="4" required></textarea>
+                            <div class="form-row">
+                                <div class="form-group">
+                                    <label for="product-image-upload">Product Image</label>
+                                    <input type="file" id="product-image-upload" name="image" accept="image/*">
+                                    <small>Upload an image or use URL below</small>
+                                </div>
+                                <div class="form-group">
+                                    <label for="product-image-url">Image URL</label>
+                                    <input type="url" id="product-image-url" name="image_url" placeholder="https://example.com/image.jpg">
+                                </div>
+                            </div>
+                            <!-- Rest of the form remains the same -->
+                            <div class="form-row">
+                                <div class="form-group">
+                                    <label for="product-scent">Scent Type</label>
+                                    <select id="product-scent" name="scent_type">
+                                        <option value="">Select Scent Type</option>
+                                        <option value="Woody">Woody</option>
+                                        <option value="Floral">Floral</option>
+                                        <option value="Citrus">Citrus</option>
+                                        <option value="Oriental">Oriental</option>
+                                        <option value="Fresh">Fresh</option>
+                                        <option value="Spicy">Spicy</option>
+                                    </select>
+                                </div>
+                                <div class="form-group">
+                                    <label for="product-gender">Gender</label>
+                                    <select id="product-gender" name="gender">
+                                        <option value="unisex">Unisex</option>
+                                        <option value="men">Men</option>
+                                        <option value="women">Women</option>
+                                    </select>
+                                </div>
+                            </div>
+                            <div class="form-row">
+                                <div class="form-group">
+                                    <label for="product-mood">Mood</label>
+                                    <input type="text" id="product-mood" name="mood" placeholder="e.g., Romantic, Energetic">
+                                </div>
+                                <div class="form-group">
+                                    <label for="product-season">Season</label>
+                                    <select id="product-season" name="season">
+                                        <option value="">Any Season</option>
+                                        <option value="Spring">Spring</option>
+                                        <option value="Summer">Summer</option>
+                                        <option value="Autumn">Autumn</option>
+                                        <option value="Winter">Winter</option>
+                                    </select>
+                                </div>
+                            </div>
+                            <div class="form-row">
+                                <div class="form-group">
+                                    <label for="product-stock">Stock Quantity *</label>
+                                    <input type="number" id="product-stock" name="stock_quantity" min="0" value="0" required>
+                                </div>
                             </div>
                             <div class="form-group">
-                                <label for="product-image">Image URL</label>
-                                <input type="url" id="product-image" required>
+                                <label for="product-description">Description *</label>
+                                <textarea id="product-description" name="description" rows="4" required></textarea>
                             </div>
                             <div class="form-actions">
                                 <button type="submit" class="save-btn">Save Product</button>
@@ -156,11 +216,12 @@
                                     <th>Brand</th>
                                     <th>Price</th>
                                     <th>Category</th>
+                                    <th>Stock</th>
                                     <th>Actions</th>
                                 </tr>
                             </thead>
                             <tbody id="products-table">
-                                <!-- Products loaded via JavaScript -->
+                                <!-- Products will be loaded via JavaScript -->
                             </tbody>
                         </table>
                     </div>
@@ -170,7 +231,10 @@
                 <section id="categories" class="admin-section">
                     <div class="section-header">
                         <h2>Category Management</h2>
-                        <button class="add-btn" id="add-category-btn">Add New Category</button>
+                        <button class="add-btn" id="add-category-btn">
+                            <i class="fas fa-plus"></i>
+                            Add New Category
+                        </button>
                     </div>
                     
                     <!-- Add Category Form -->
@@ -178,11 +242,15 @@
                         <form id="category-form">
                             <div class="form-group">
                                 <label for="category-name">Category Name</label>
-                                <input type="text" id="category-name" required>
+                                <input type="text" id="category-name" name="name" required>
                             </div>
                             <div class="form-group">
                                 <label for="category-description">Description</label>
-                                <textarea id="category-description" rows="3" required></textarea>
+                                <textarea id="category-description" name="description" rows="3" required></textarea>
+                            </div>
+                            <div class="form-group">
+                                <label for="category-image">Image URL</label>
+                                <input type="url" id="category-image" name="image_url" placeholder="https://example.com/image.jpg">
                             </div>
                             <div class="form-actions">
                                 <button type="submit" class="save-btn">Save Category</button>
@@ -203,7 +271,7 @@
                                 </tr>
                             </thead>
                             <tbody id="categories-table">
-                                <!-- Categories loaded via JavaScript -->
+                                <!-- Categories will be loaded via JavaScript -->
                             </tbody>
                         </table>
                     </div>
@@ -225,7 +293,7 @@
                                 </tr>
                             </thead>
                             <tbody id="messages-table">
-                                <!-- Messages loaded via JavaScript -->
+                                <!-- Messages will be loaded via JavaScript -->
                             </tbody>
                         </table>
                     </div>
@@ -244,87 +312,36 @@
                                     <th>Rating</th>
                                     <th>Review</th>
                                     <th>Date</th>
-                                    <th>Actions</th>
-                                </tr>
-                            </thead>
-                            <tbody id="reviews-table">
-                                <!-- Reviews loaded via JavaScript -->
-                            </tbody>
-                        </table>
-                    </div>
-                </section>
-
-                <!-- Wishlists Management -->
-                <section id="wishlists" class="admin-section">
-                    <h2>User Wishlists</h2>
-                    <div class="table-container">
-                        <table class="data-table">
-                            <thead>
-                                <tr>
-                                    <th>User</th>
-                                    <th>Product</th>
-                                    <th>Added Date</th>
-                                </tr>
-                            </thead>
-                            <tbody id="wishlists-table">
-                                <!-- Wishlists loaded via JavaScript -->
-                            </tbody>
-                        </table>
-                    </div>
-                </section>
-
-                <!-- Discounts Management -->
-                <section id="discounts" class="admin-section">
-                    <div class="section-header">
-                        <h2>Discount Management</h2>
-                        <button class="add-btn" id="add-discount-btn">Add New Discount</button>
-                    </div>
-                    
-                    <!-- Add Discount Form -->
-                    <div id="add-discount-form" class="form-modal" style="display: none;">
-                        <form id="discount-form">
-                            <div class="form-row">
-                                <div class="form-group">
-                                    <label for="discount-code">Discount Code</label>
-                                    <input type="text" id="discount-code" required>
-                                </div>
-                                <div class="form-group">
-                                    <label for="discount-percentage">Percentage</label>
-                                    <input type="number" id="discount-percentage" min="1" max="100" required>
-                                </div>
-                            </div>
-                            <div class="form-row">
-                                <div class="form-group">
-                                    <label for="discount-start">Start Date</label>
-                                    <input type="date" id="discount-start" required>
-                                </div>
-                                <div class="form-group">
-                                    <label for="discount-end">End Date</label>
-                                    <input type="date" id="discount-end" required>
-                                </div>
-                            </div>
-                            <div class="form-actions">
-                                <button type="submit" class="save-btn">Save Discount</button>
-                                <button type="button" class="cancel-btn" id="cancel-discount">Cancel</button>
-                            </div>
-                        </form>
-                    </div>
-
-                    <!-- Discounts Table -->
-                    <div class="table-container">
-                        <table class="data-table">
-                            <thead>
-                                <tr>
-                                    <th>Code</th>
-                                    <th>Percentage</th>
-                                    <th>Start Date</th>
-                                    <th>End Date</th>
                                     <th>Status</th>
                                     <th>Actions</th>
                                 </tr>
                             </thead>
-                            <tbody id="discounts-table">
-                                <!-- Discounts loaded via JavaScript -->
+                            <tbody id="reviews-table">
+                                <!-- Reviews will be loaded via JavaScript -->
+                            </tbody>
+                        </table>
+                    </div>
+                </section>
+
+                <!-- Orders Management -->
+                <section id="orders" class="admin-section">
+                    <h2>Order Management</h2>
+                    <div class="table-container">
+                        <table class="data-table">
+                            <thead>
+                                <tr>
+                                    <th>ID</th>
+                                    <th>Order #</th>
+                                    <th>Customer</th>
+                                    <th>Items</th>
+                                    <th>Amount</th>
+                                    <th>Status</th>
+                                    <th>Date</th>
+                                    <th>Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody id="orders-table">
+                                <!-- Orders will be loaded via JavaScript -->
                             </tbody>
                         </table>
                     </div>
@@ -333,7 +350,7 @@
         </div>
     </div>
 
-    <script src="static/js/admin.js"></script>
-    <script src="static/js/global-search.js"></script>
+    <script src="{{ url_for('static', filename='js/main.js') }}"></script>
+    <script src="{{ url_for('static', filename='js/admin.js') }}"></script>
 </body>
 </html>

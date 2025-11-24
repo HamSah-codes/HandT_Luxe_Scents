@@ -1,1006 +1,204 @@
 // Shop Page JavaScript
-class ShopPage {
+class ShopManager {
     constructor() {
         this.products = [];
         this.filteredProducts = [];
-        this.currentFilters = {
+        this.filters = {
+            category: 'all',
+            scent_type: 'all',
             gender: 'all',
-            scent: '',
-            brand: '',
-            mood: '',
-            season: '',
-            maxPrice: 1000
+            min_price: 0,
+            max_price: 1000,
+            search: ''
         };
         this.currentSort = 'featured';
         this.init();
     }
 
     async init() {
+        await this.loadCategories();
         await this.loadProducts();
         this.setupEventListeners();
-        this.setupSearch();
-        this.displayProducts();
-        this.updateResultsCount();
-        this.addScrollIndicators();
-        this.checkForSelectedProduct();
-        this.checkForSearchTerm();
+        this.setupFilters();
+        this.renderProducts();
     }
 
-    // Add search functionality to ShopPage class
-    setupSearch() {
-        const searchInput = document.querySelector('.search-input');
-        const searchBtn = document.querySelector('.search-btn');
-        let suggestionsContainer = null;
-
-        if (searchInput && searchBtn) {
-            // Create suggestions container
-            suggestionsContainer = document.createElement('div');
-            suggestionsContainer.className = 'search-suggestions';
-            searchInput.parentNode.appendChild(suggestionsContainer);
-
-            // Create clear button
-            const clearBtn = document.createElement('button');
-            clearBtn.className = 'clear-search';
-            clearBtn.innerHTML = '<i class="fas fa-times"></i>';
-            clearBtn.type = 'button';
-            searchInput.parentNode.appendChild(clearBtn);
-
-            const performSearch = () => {
-                const searchTerm = searchInput.value.toLowerCase().trim();
-                if (searchTerm) {
-                    // Check if this is an exact product name match
-                    const exactProduct = this.products.find(product => 
-                        product.name.toLowerCase() === searchTerm.toLowerCase()
-                    );
-
-                    if (exactProduct) {
-                        // If exact match, show only that product
-                        this.filteredProducts = [exactProduct];
-                        this.showNotification(`Showing product: ${exactProduct.name}`, 'success');
-                    } else {
-                        // Otherwise perform general search
-                        const searchResults = this.products.filter(product => 
-                            product.name.toLowerCase().includes(searchTerm) ||
-                            product.brand.toLowerCase().includes(searchTerm) ||
-                            product.category.toLowerCase().includes(searchTerm) ||
-                            product.scent.toLowerCase().includes(searchTerm) ||
-                            product.description.toLowerCase().includes(searchTerm)
-                        );
-
-                        this.filteredProducts = searchResults;
-                        
-                        if (searchResults.length === 0) {
-                            this.showNotification('No products found matching your search', 'info');
-                        } else {
-                            this.showNotification(`Found ${searchResults.length} product(s)`, 'success');
-                        }
-                    }
-                    
-                    this.displayProducts();
-                    this.updateResultsCount();
-                    this.hideSuggestions();
-                    
-                    // Scroll to products section
-                    setTimeout(() => {
-                        document.querySelector('.products-main').scrollIntoView({ 
-                            behavior: 'smooth' 
-                        });
-                    }, 500);
-                }
-            };
-
-            // Clear search functionality
-            clearBtn.addEventListener('click', () => {
-                searchInput.value = '';
-                this.filteredProducts = [...this.products];
-                this.displayProducts();
-                this.updateResultsCount();
-                this.hideSuggestions();
-                clearBtn.style.display = 'none';
-                searchInput.focus();
-            });
-
-            // Real-time search suggestions
-            searchInput.addEventListener('input', (e) => {
-                const searchTerm = e.target.value.trim().toLowerCase();
-                clearBtn.style.display = searchTerm ? 'block' : 'none';
-                
-                if (searchTerm.length > 0) {
-                    this.showSuggestions(searchTerm);
-                } else {
-                    this.hideSuggestions();
-                    // Reset to all products when search is cleared
-                    this.filteredProducts = [...this.products];
-                    this.displayProducts();
-                    this.updateResultsCount();
-                }
-            });
-
-            searchBtn.addEventListener('click', performSearch);
-            searchInput.addEventListener('keypress', (e) => {
-                if (e.key === 'Enter') {
-                    performSearch();
-                }
-            });
-
-            // Hide suggestions when clicking outside
-            document.addEventListener('click', (e) => {
-                if (!searchInput.contains(e.target) && 
-                    !clearBtn.contains(e.target) &&
-                    (!suggestionsContainer || !suggestionsContainer.contains(e.target))) {
-                    this.hideSuggestions();
-                }
-            });
-        }
-    }
-    // Show search suggestions in ShopPages
-    showSuggestions(searchTerm) {
-        const suggestionsContainer = document.querySelector('.search-suggestions');
-        if (!suggestionsContainer) return;
-
-        const suggestions = this.products.filter(product => 
-            product.name.toLowerCase().includes(searchTerm) ||
-            product.brand.toLowerCase().includes(searchTerm)
-        ).slice(0, 5);
-
-        if (suggestions.length > 0) {
-            suggestionsContainer.innerHTML = suggestions.map(product => `
-                <div class="suggestion-item" data-product-id="${product.id}">
-                    <img src="${product.image}" alt="${product.name}" class="suggestion-image">
-                    <div class="suggestion-info">
-                        <div class="suggestion-name">${product.name}</div>
-                        <div class="suggestion-brand">${product.brand}</div>
-                        <div class="suggestion-price">GH₵${product.price}</div>
-                    </div>
-                </div>
-            `).join('');
-
-            suggestionsContainer.style.display = 'block';
-
-            // Add click event to suggestions
-            suggestionsContainer.querySelectorAll('.suggestion-item').forEach(item => {
-                item.addEventListener('click', () => {
-                    const productId = item.getAttribute('data-product-id');
-                    const searchInput = document.querySelector('.search-input');
-                    const product = this.products.find(p => p.id == productId);
-                    
-                    if (product) {
-                        searchInput.value = product.name;
-                        this.hideSuggestions();
-                        
-                        // Filter to show ONLY this specific product
-                        this.filteredProducts = [product];
-                        this.displayProducts();
-                        this.updateResultsCount();
-                        this.showNotification(`Showing product: ${product.name}`, 'success');
-                        
-                        // Scroll to products section
-                        setTimeout(() => {
-                            document.querySelector('.products-main').scrollIntoView({ 
-                                behavior: 'smooth' 
-                            });
-                        }, 500);
-                    }
-                });
-            });
-        } else {
-            this.hideSuggestions();
-        }
-    }
-
-    // New method to handle product selection and redirect to shop
-    selectProductForShop(productId) {
-        // Store the product ID in localStorage to filter on shop page
-        localStorage.setItem('selectedProductId', productId);
-        
-        // Redirect to shop page
-        window.location.href = 'shop.html';
-    }
-
-    // Hide search suggestions in ShopPage
-    hideSuggestions() {
-        const suggestionsContainer = document.querySelector('.search-suggestions');
-        if (suggestionsContainer) {
-            suggestionsContainer.style.display = 'none';
-        }
-    }
-
-    // Show search suggestions in ShopPage
-    showSuggestions(searchTerm) {
-        const suggestionsContainer = document.querySelector('.search-suggestions');
-        if (!suggestionsContainer) return;
-
-        const suggestions = this.products.filter(product => 
-            product.name.toLowerCase().includes(searchTerm) ||
-            product.brand.toLowerCase().includes(searchTerm)
-        ).slice(0, 5);
-
-        if (suggestions.length > 0) {
-            suggestionsContainer.innerHTML = suggestions.map(product => `
-                <div class="suggestion-item" data-product-id="${product.id}">
-                    <img src="${product.image}" alt="${product.name}" class="suggestion-image">
-                    <div class="suggestion-info">
-                        <div class="suggestion-name">${product.name}</div>
-                        <div class="suggestion-brand">${product.brand}</div>
-                        <div class="suggestion-price">GH₵${product.price}</div>
-                    </div>
-                </div>
-            `).join('');
-
-            suggestionsContainer.style.display = 'block';
-
-            // Add click event to suggestions
-            suggestionsContainer.querySelectorAll('.suggestion-item').forEach(item => {
-                item.addEventListener('click', () => {
-                    const productId = item.getAttribute('data-product-id');
-                    const searchInput = document.querySelector('.search-input');
-                    const product = this.products.find(p => p.id == productId);
-                    
-                    if (product) {
-                        searchInput.value = product.name;
-                        this.hideSuggestions();
-                        
-                        // Filter products by the selected product name
-                        this.filteredProducts = this.products.filter(p => 
-                            p.name.toLowerCase().includes(product.name.toLowerCase())
-                        );
-                        this.displayProducts();
-                        this.updateResultsCount();
-                        this.showNotification(`Found ${this.filteredProducts.length} product(s) for "${product.name}"`, 'success');
-                    }
-                });
-            });
-        } else {
-            this.hideSuggestions();
-        }
-    }
-
-    // Hide search suggestions in ShopPage
-    hideSuggestions() {
-        const suggestionsContainer = document.querySelector('.search-suggestions');
-        if (suggestionsContainer) {
-            suggestionsContainer.style.display = 'none';
-        }
-    }
-
-    // Check if a product was selected from search and filter accordingly
-    checkForSelectedProduct() {
-        const selectedProductId = localStorage.getItem('selectedProductId');
-        
-        if (selectedProductId) {
-            const product = this.products.find(p => p.id == selectedProductId);
-            
-            if (product) {
-                // Filter to show only the selected product
-                this.filteredProducts = [product];
-                this.displayProducts();
-                this.updateResultsCount();
-                
-                // Set the search input value
-                const searchInput = document.querySelector('.search-input');
-                if (searchInput) {
-                    searchInput.value = product.name;
-                }
-                
-                // Show notification
-                this.showNotification(`Showing product: ${product.name}`, 'success');
-                
-                // Clear the stored product ID
-                localStorage.removeItem('selectedProductId');
-                
-                // Scroll to products section
-                setTimeout(() => {
-                    document.querySelector('.products-main').scrollIntoView({ 
-                        behavior: 'smooth' 
-                    });
-                }, 500);
-            }
-        }
-    }
-
-    // Check for search terms from other pages
-    checkForSearchTerm() {
-        const searchTerm = localStorage.getItem('searchTerm');
-        
-        if (searchTerm) {
-            const searchInput = document.querySelector('.search-input');
-            if (searchInput) {
-                searchInput.value = searchTerm;
-            }
-            
-            // Perform the search
-            const searchResults = this.products.filter(product => 
-                product.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                product.brand.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                product.category.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                product.scent.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                product.description.toLowerCase().includes(searchTerm.toLowerCase())
-            );
-
-            this.filteredProducts = searchResults;
-            this.displayProducts();
-            this.updateResultsCount();
-            
-            if (searchResults.length === 0) {
-                this.showNotification('No products found matching your search', 'info');
-            } else {
-                this.showNotification(`Found ${searchResults.length} product(s)`, 'success');
-            }
-            
-            // Clear the stored search term
-            localStorage.removeItem('searchTerm');
-            
-            // Scroll to products section
-            setTimeout(() => {
-                document.querySelector('.products-main').scrollIntoView({ 
-                    behavior: 'smooth' 
-                });
-            }, 500);
-        }
-    }
-
-    // Load products data
+    // Data Loading Methods
     async loadProducts() {
-        // In a real application, you might fetch this data from a server
-        // For this example, we'll use a static array of products
-        this.products = [
-            {
-                id: 1,
-                name: "Oud Nior",
-                brand: "Khadlaj",
-                price: 240.00,
-                originalPrice: 300.00,
-                image: "/static/assets/img/OUD_NIOR.jpeg",
-                category: "unisex",
-                scent: "woody",
-                brandType: "Khadlaj",
-                mood: "confident",
-                season: "winter",
-                description: "A rich and intense fragrance with oud wood notes",
-                isNew: false,
-                isBestSeller: true
-            },
-            {
-                id: 2,
-                name: "Black Leather",
-                brand: "Fragrance World",
-                price: 140.00,
-                originalPrice: 155.00,
-                image: "/static/assets/img/Black_Leather.jpeg",
-                category: "men",
-                scent: "floral",
-                brandType: "Fragrance World",
-                mood: "romantic",
-                season: "spring",
-                description: "Elegant floral scent with rose and jasmine notes",
-                isNew: false,
-                isBestSeller: true
-            },
-            {
-                id: 3,
-                name: "Matelot",
-                brand: "Fragrance World",
-                price: 150.00,
-                originalPrice: 160.00,
-                image: "/static/assets/img/Matelot.jpeg",
-                category: "men",
-                scent: "citrus",
-                brandType: "Fragrance World",
-                mood: "energetic",
-                season: "summer",
-                description: "Fresh and invigorating citrus aquatic fragrance",
-                isNew: false,
-                isBestSeller: true
-            },
-            {
-                id: 4,
-                name: "Suave Intense",
-                brand: "Fragrance World",
-                price: 149.00,
-                originalPrice: 155.00,
-                image: "/static/assets/img/Suave_Intense.jpeg",
-                category: "unisex",
-                scent: "woody",
-                brandType: "ht-luxe",
-                mood: "calm",
-                season: "autumn",
-                description: "Warm and comforting sandalwood fragrance",
-                isNew: false,
-                isBestSeller: false
-            },
-            {
-                id: 5,
-                name: "Mr. England Touch",
-                brand: "Premium",
-                price: 140.00,
-                originalPrice: 155.00,
-                image: "/static/assets/img/Mr_England.jpeg",
-                category: "men",
-                scent: "citrus",
-                brandType: "premium",
-                mood: "energetic",
-                season: "summer",
-                description: "Bright citrus notes with floral undertones",
-                isNew: false,
-                isBestSeller: false
-            },
-            {
-                id: 6,
-                name: "Instant Love",
-                brand: "Montera",
-                price: 140.00,
-                originalPrice: 155.00,
-                image: "/static/assets/img/Instant_Love.jpeg",
-                category: "unisex",
-                scent: "oriental",
-                brandType: "exclusive",
-                mood: "romantic",
-                season: "winter",
-                description: "Exotic oriental fragrance with spice notes",
-                isNew: false,
-                isBestSeller: false
-            },
-            {
-                id: 7,
-                name: "Explore The One",
-                brand: "H&T Luxe",
-                price: 155.00,
-                originalPrice: 170.00,
-                image: "/static/assets/img/Explore_The_One.jpeg",
-                category: "unisex",
-                scent: "fresh",
-                brandType: "ht-luxe",
-                mood: "calm",
-                season: "spring",
-                description: "Clean and crisp fresh linen scent",
-                isNew: false,
-                isBestSeller: false
-            },
-            {
-                id: 8,
-                name: "Night Club",
-                brand: "Fragrance World",
-                price: 185.00,
-                originalPrice: 200.00,
-                image: "/static/assets/img/Night_Club.jpeg",
-                category: "men",
-                scent: "spicy",
-                brandType: "Fragrance World",
-                mood: "confident",
-                season: "autumn",
-                description: "Warm spicy notes with exotic undertones",
-                isNew: false,
-                isBestSeller: true
-            },
-            {
-                id: 9,
-                name: "Tobacco Rouge",
-                brand: "Pendora Scents",
-                price: 140.00,
-                originalPrice: 155.00,
-                image: "/static/assets/img/Tobacco_Rouge.jpeg",
-                category: "men",
-                scent: "spicy",
-                brandType: "premium",
-                mood: "confident",
-                season: "autumn",
-                description: "Warm spicy notes with exotic undertones",
-                isNew: true,
-                isBestSeller: false
-            },
-            {
-                id: 10,
-                name: "Ameer Al-Oudh",
-                brand: "Lattafa",
-                price: 220.00,
-                originalPrice: 250.00,
-                image: "/static/assets/img/Ameer_Al-Oudh.jpeg",
-                category: "men",
-                scent: "spicy",
-                brandType: "Lattafa",
-                mood: "confident",
-                season: "autumn",
-                description: "Warm spicy notes with exotic undertones",
-                isNew: false,
-                isBestSeller: true
-            },
-            {
-                id: 11,
-                name: "Exchange",
-                brand: "Premium",
-                price: 140.00,
-                originalPrice: 155.00,
-                image: "/static/assets/img/Exchange.jpeg",
-                category: "unisex",
-                scent: "spicy",
-                brandType: "premium",
-                mood: "confident",
-                season: "autumn",
-                description: "Warm spicy notes with exotic undertones",
-                isNew: false,
-                isBestSeller: true
-            },
-            {
-                id: 12,
-                name: "Ramz Lattafa(Gold)",
-                brand: "Lattafa",
-                price: 200.00,
-                originalPrice: 250.00,
-                image: "/static/assets/img/Ramz_Lattafa(Gold).jpeg",
-                category: "unisex",
-                scent: "spicy",
-                brandType: "Lattafa",
-                mood: "confident",
-                season: "autumn",
-                description: "Warm spicy notes with exotic undertones",
-                isNew: false,
-                isBestSeller: true
-            },
-            {
-                id: 13,
-                name: "Ramz Lattafa(Silver)",
-                brand: "Lattafa",
-                price: 200.00,
-                originalPrice: 250.00,
-                image: "/static/assets/img/Ramz_Lattafa(Silver).jpeg",
-                category: "men",
-                scent: "spicy",
-                brandType: "Lattafa",
-                mood: "confident",
-                season: "autumn",
-                description: "Warm spicy notes with exotic undertones",
-                isNew: false,
-                isBestSeller: true
-            },
-            {
-                id: 14,
-                name: "Barakkat satin oud",
-                brand: "Premium",
-                price: 140.00,
-                originalPrice: 155.00,
-                image: "/static/assets/img/Barakkat_Satin_Oud.jpeg",
-                category: "men",
-                scent: "spicy",
-                brandType: "premium",
-                mood: "confident",
-                season: "autumn",
-                description: "Warm spicy notes with exotic undertones",
-                isNew: false,
-                isBestSeller: false
-            },
-            {
-                id: 15,
-                name: "Brown Orchid(Blanc)",
-                brand: "Fragrance World",
-                price: 140.00,
-                originalPrice: 155.00,
-                image: "/static/assets/img/Brown_Orchid(Blanc).jpeg",
-                category: "men",
-                scent: "spicy",
-                brandType: "Fragrance World",
-                mood: "confident",
-                season: "autumn",
-                description: "Warm spicy notes with exotic undertones",
-                isNew: false,
-                isBestSeller: true
-            },
-            {
-                id: 16,
-                name: "Lomani Code",
-                brand: "Premium",
-                price: 140.00,
-                originalPrice: 155.00,
-                image: "/static/assets/img/Lomani_Code.jpeg",
-                category: "men",
-                scent: "spicy",
-                brandType: "premium",
-                mood: "confident",
-                season: "autumn",
-                description: "Warm spicy notes with exotic undertones",
-                isNew: true,
-                isBestSeller: false
-            },
-            {
-                id: 17,
-                name: "Barakkat Rouge 549",
-                brand: "Premium",
-                price: 140.00,
-                originalPrice: 155.00,
-                image: "/static/assets/img/Barakkat_Rouge.jpeg",
-                category: "unisex",
-                scent: "spicy",
-                brandType: "premium",
-                mood: "confident",
-                season: "autumn",
-                description: "Warm spicy notes with exotic undertones",
-                isNew: false,
-                isBestSeller: true
-            },
-            {
-                id: 18,
-                name: "After !2",
-                brand: "Efolia",
-                price: 160.00,
-                originalPrice: 180.00,
-                image: "/static/assets/img/After_12.jpeg",
-                category: "men",
-                scent: "spicy",
-                brandType: "Efolia",
-                mood: "confident",
-                season: "autumn",
-                description: "Warm spicy notes with exotic undertones",
-                isNew: false,
-                isBestSeller: false
-            },
-            {
-                id: 19,
-                name: "Carbon Black",
-                brand: "Fragrace World",
-                price: 140.00,
-                originalPrice: 155.00,
-                image: "/static/assets/img/Carbon_Black.jpeg",
-                category: "men",
-                scent: "spicy",
-                brandType: "Fragrance World",
-                mood: "confident",
-                season: "autumn",
-                description: "Warm spicy notes with exotic undertones",
-                isNew: false,
-                isBestSeller: true
-            },
-            {
-                id: 20,
-                name: "Proud Of You(Amber)",
-                brand: "Fragrance World",
-                price: 140.00,
-                originalPrice: 155.00,
-                image: "/static/assets/img/Proud_Of_You.jpeg",
-                category: "women",
-                scent: "spicy",
-                brandType: "Fragrance World",
-                mood: "confident",
-                season: "autumn",
-                description: "Warm spicy notes with exotic undertones",
-                isNew: false,
-                isBestSeller: false
-            },
-            {
-                id: 21,
-                name: "Lail Malaki",
-                brand: "Lattafa",
-                price: 190.00,
-                originalPrice: 220.00,
-                image: "/static/assets/img/Lail_Malaki.jpeg",
-                category: "women",
-                scent: "spicy",
-                brandType: "Lattafa",
-                mood: "confident",
-                season: "autumn",
-                description: "Warm spicy notes with exotic undertones",
-                isNew: false,
-                isBestSeller: false
-            },
-            {
-                id: 22,
-                name: "Emperor",
-                brand: "Premium",
-                price: 160.00,
-                originalPrice: 180.00,
-                image: "/static/assets/img/Emperor.jpeg",
-                category: "men",
-                scent: "spicy",
-                brandType: "premium",
-                mood: "confident",
-                season: "autumn",
-                description: "Warm spicy notes with exotic undertones",
-                isNew: false,
-                isBestSeller: false
-            },
-            {
-                id: 23,
-                name: "Oniro",
-                brand: "Fragrance World",
-                price: 140.00,
-                originalPrice: 155.00,
-                image: "/static/assets/img/Oniro.jpeg",
-                category: "men",
-                scent: "spicy",
-                brandType: "Lattafa",
-                mood: "confident",
-                season: "autumn",
-                description: "Warm spicy notes with exotic undertones",
-                isNew: false,
-                isBestSeller: true
-            },
-            {
-                id: 24,
-                name: "Queen Of Red",
-                brand: "Fragrance World",
-                price: 140.00,
-                originalPrice: 155.00,
-                image: "/static/assets/img/Queen_Of_Red.webp",
-                category: "women",
-                scent: "spicy",
-                brandType: "Fragrance World",
-                mood: "confident",
-                season: "autumn",
-                description: "Warm spicy notes with exotic undertones",
-                isNew: false,
-                isBestSeller: true
-            },
-            {
-                id: 25,
-                name: "Ely Sia",
-                brand: "Fragrance World",
-                price: 140.00,
-                originalPrice: 155.00,
-                image: "/static/assets/img/Ely_Sia.jpeg",
-                category: "women",
-                scent: "spicy",
-                brandType: "Fragrance World",
-                mood: "confident",
-                season: "autumn",
-                description: "Warm spicy notes with exotic undertones",
-                isNew: false,
-                isBestSeller: false
-            },
-            {
-                id: 26,
-                name: "Intensio",
-                brand: "L'Affair",
-                price: 175.00,
-                originalPrice: 210.00,
-                image: "/static/assets/img/Intensio.jpeg",
-                category: "men",
-                scent: "spicy",
-                brandType: "L'Affair",
-                mood: "confident",
-                season: "autumn",
-                description: "Warm spicy notes with exotic undertones",
-                isNew: true,
-                isBestSeller: false
-            },
-            {
-                id: 27,
-                name: "Hayaati Rose",
-                brand: "Fragrance World",
-                price: 160.00,
-                originalPrice: 180.00,
-                image: "/static/assets/img/Hayaati_Rose.jpeg",
-                category: "women",
-                scent: "spicy",
-                brandType: "Fragrance World",
-                mood: "confident",
-                season: "autumn",
-                description: "Warm spicy notes with exotic undertones",
-                isNew: true,
-                isBestSeller: false
-            },
-            {
-                id: 28,
-                name: "Malaki Secret",
-                brand: "Sahari",
-                price: 160.00,
-                originalPrice: 180.00,
-                image: "/static/assets/img/Malaki_Secret.jpeg",
-                category: "women",
-                scent: "spicy",
-                brandType: "Sahari",
-                mood: "confident",
-                season: "autumn",
-                description: "Warm spicy notes with exotic undertones",
-                isNew: true,
-                isBestSeller: false
-            }
-        ];
-
-        this.filteredProducts = [...this.products];
-        this.hideLoadingState();
-    }
-
-        // Add scroll indicators to filters sidebar
-    addScrollIndicators() {
-        const sidebar = document.querySelector('.filters-sidebar');
-        
-        sidebar.addEventListener('scroll', () => {
-            const scrollTop = sidebar.scrollTop;
-            const scrollHeight = sidebar.scrollHeight;
-            const clientHeight = sidebar.clientHeight;
-            
-            // Top scroll indicator
-            if (scrollTop > 10) {
-                sidebar.classList.add('scrolled');
-            } else {
-                sidebar.classList.remove('scrolled');
-            }
-            
-            // Bottom scroll indicator
-            if (scrollTop + clientHeight < scrollHeight - 10) {
-                sidebar.classList.add('scrolled-bottom');
-            } else {
-                sidebar.classList.remove('scrolled-bottom');
-            }
-        });
-    }
-
-    setupEventListeners() {
-        // Gender filter buttons
-        document.querySelectorAll('[data-filter]').forEach(button => {
-            button.addEventListener('click', (e) => {
-                this.handleGenderFilter(e.target.getAttribute('data-filter'));
-            });
-        });
-
-        // Scent type filter buttons
-        document.querySelectorAll('[data-scent]').forEach(button => {
-            button.addEventListener('click', (e) => {
-                this.handleScentFilter(e.target.getAttribute('data-scent'));
-            });
-        });
-
-        // Brand filter buttons
-        document.querySelectorAll('[data-brand]').forEach(button => {
-            button.addEventListener('click', (e) => {
-                this.handleBrandFilter(e.target.getAttribute('data-brand'));
-            });
-        });
-
-        // Mood filter buttons
-        document.querySelectorAll('[data-mood]').forEach(button => {
-            button.addEventListener('click', (e) => {
-                this.handleMoodFilter(e.target.getAttribute('data-mood'));
-            });
-        });
-
-        // Season filter buttons
-        document.querySelectorAll('[data-season]').forEach(button => {
-            button.addEventListener('click', (e) => {
-                this.handleSeasonFilter(e.target.getAttribute('data-season'));
-            });
-        });
-
-        // Price range slider
-        const priceSlider = document.getElementById('price-range');
-        priceSlider.addEventListener('input', (e) => {
-            this.handlePriceFilter(parseInt(e.target.value));
-        });
-
-        // Sort options
-        document.getElementById('sort-by').addEventListener('change', (e) => {
-            this.handleSort(e.target.value);
-        });
-
-        // Clear filters button
-        document.querySelector('.clear-filters-btn').addEventListener('click', () => {
-            this.clearAllFilters();
-        });
-
-        // Mobile filter links
-        document.querySelectorAll('.mobile-menu-link[data-filter]').forEach(link => {
-            link.addEventListener('click', (e) => {
-                e.preventDefault();
-                const filter = e.target.getAttribute('data-filter');
-                this.handleGenderFilter(filter);
-                this.closeMobileMenu();
-            });
-        });
-    }
-
-    handleGenderFilter(gender) {
-        // Update active state for gender buttons
-        document.querySelectorAll('[data-filter]').forEach(btn => {
-            btn.classList.remove('active');
-        });
-        document.querySelector(`[data-filter="${gender}"]`).classList.add('active');
-
-        this.currentFilters.gender = gender;
-        this.applyFilters();
-    }
-
-    handleScentFilter(scent) {
-        // Toggle scent filter
-        const button = document.querySelector(`[data-scent="${scent}"]`);
-        button.classList.toggle('active');
-        
-        if (button.classList.contains('active')) {
-            this.currentFilters.scent = scent;
-        } else {
-            this.currentFilters.scent = '';
+        try {
+            const queryParams = new URLSearchParams(this.filters).toString();
+            const response = await fetch(`/api/products?${queryParams}`);
+            this.products = await response.json();
+            this.filteredProducts = [...this.products];
+            this.sortProducts();
+            this.updateResultsCount();
+        } catch (error) {
+            console.error('Error loading products:', error);
+            this.showAlert('Error loading products', 'error');
         }
-        this.applyFilters();
     }
 
-    handleBrandFilter(brand) {
-        // Toggle brand filter
-        const button = document.querySelector(`[data-brand="${brand}"]`);
-        button.classList.toggle('active');
-        
-        if (button.classList.contains('active')) {
-            this.currentFilters.brand = brand;
-        } else {
-            this.currentFilters.brand = '';
+    async loadCategories() {
+        try {
+            const response = await fetch('/api/categories');
+            const categories = await response.json();
+            this.renderCategoryFilters(categories);
+        } catch (error) {
+            console.error('Error loading categories:', error);
         }
-        this.applyFilters();
     }
 
-    handleMoodFilter(mood) {
-        // Toggle mood filter
-        const button = document.querySelector(`[data-mood="${mood}"]`);
-        button.classList.toggle('active');
-        
-        if (button.classList.contains('active')) {
-            this.currentFilters.mood = mood;
-        } else {
-            this.currentFilters.mood = '';
+    // Filter Methods
+    setupFilters() {
+        // Category filter
+        const categoryFilter = document.getElementById('category-filter');
+        if (categoryFilter) {
+            categoryFilter.addEventListener('change', (e) => {
+                this.filters.category = e.target.value;
+                this.applyFilters();
+            });
         }
-        this.applyFilters();
-    }
 
-    handleSeasonFilter(season) {
-        // Toggle season filter
-        const button = document.querySelector(`[data-season="${season}"]`);
-        button.classList.toggle('active');
-        
-        if (button.classList.contains('active')) {
-            this.currentFilters.season = season;
-        } else {
-            this.currentFilters.season = '';
+        // Gender filter
+        const genderFilters = document.querySelectorAll('[data-filter="gender"]');
+        genderFilters.forEach(filter => {
+            filter.addEventListener('click', (e) => {
+                genderFilters.forEach(f => f.classList.remove('active'));
+                e.target.classList.add('active');
+                this.filters.gender = e.target.dataset.value;
+                this.applyFilters();
+            });
+        });
+
+        // Scent type filter
+        const scentFilter = document.getElementById('scent-filter');
+        if (scentFilter) {
+            scentFilter.addEventListener('change', (e) => {
+                this.filters.scent_type = e.target.value;
+                this.applyFilters();
+            });
         }
-        this.applyFilters();
-    }
 
-    handlePriceFilter(maxPrice) {
-        this.currentFilters.maxPrice = maxPrice;
-        document.getElementById('price-max').textContent = `GH₵ ${maxPrice}`;
-        this.applyFilters();
-    }
+        // Price range filter
+        const priceRange = document.getElementById('price-range');
+        const priceMax = document.getElementById('price-max');
+        if (priceRange && priceMax) {
+            priceRange.addEventListener('input', (e) => {
+                this.filters.max_price = e.target.value;
+                priceMax.textContent = `GH₵${e.target.value}`;
+                this.applyFilters();
+            });
+        }
 
-    handleSort(sortType) {
-        this.currentSort = sortType;
-        this.sortProducts();
-        this.displayProducts();
+        // Search functionality
+        const searchInput = document.querySelector('.search-input');
+        if (searchInput) {
+            let searchTimeout;
+            searchInput.addEventListener('input', (e) => {
+                clearTimeout(searchTimeout);
+                searchTimeout = setTimeout(() => {
+                    this.filters.search = e.target.value.trim();
+                    this.applyFilters();
+                }, 500);
+            });
+        }
+
+        // Sort functionality
+        const sortSelect = document.getElementById('sort-by');
+        if (sortSelect) {
+            sortSelect.addEventListener('change', (e) => {
+                this.currentSort = e.target.value;
+                this.sortProducts();
+                this.renderProducts();
+            });
+        }
+
+        // Clear filters
+        const clearFiltersBtn = document.querySelector('.clear-filters-btn');
+        if (clearFiltersBtn) {
+            clearFiltersBtn.addEventListener('click', () => {
+                this.clearFilters();
+            });
+        }
     }
 
     applyFilters() {
         this.filteredProducts = this.products.filter(product => {
+            // Category filter
+            if (this.filters.category !== 'all' && product.category_name !== this.filters.category) {
+                return false;
+            }
+
             // Gender filter
-            if (this.currentFilters.gender !== 'all' && product.category !== this.currentFilters.gender) {
+            if (this.filters.gender !== 'all' && product.gender !== this.filters.gender) {
                 return false;
             }
 
-            // Scent filter
-            if (this.currentFilters.scent && product.scent !== this.currentFilters.scent) {
-                return false;
-            }
-
-            // Brand filter
-            if (this.currentFilters.brand && product.brandType !== this.currentFilters.brand) {
-                return false;
-            }
-
-            // Mood filter
-            if (this.currentFilters.mood && product.mood !== this.currentFilters.mood) {
-                return false;
-            }
-
-            // Season filter
-            if (this.currentFilters.season && product.season !== this.currentFilters.season) {
+            // Scent type filter
+            if (this.filters.scent_type !== 'all' && product.scent_type !== this.filters.scent_type) {
                 return false;
             }
 
             // Price filter
-            if (product.price > this.currentFilters.maxPrice) {
+            if (product.price < this.filters.min_price || product.price > this.filters.max_price) {
                 return false;
+            }
+
+            // Search filter
+            if (this.filters.search) {
+                const searchTerm = this.filters.search.toLowerCase();
+                const searchableText = `${product.name} ${product.brand} ${product.description}`.toLowerCase();
+                if (!searchableText.includes(searchTerm)) {
+                    return false;
+                }
             }
 
             return true;
         });
 
         this.sortProducts();
-        this.displayProducts();
+        this.renderProducts();
         this.updateResultsCount();
     }
 
+    clearFilters() {
+        // Reset filter values
+        this.filters = {
+            category: 'all',
+            scent_type: 'all',
+            gender: 'all',
+            min_price: 0,
+            max_price: 1000,
+            search: ''
+        };
+
+        // Reset UI elements
+        const categoryFilter = document.getElementById('category-filter');
+        if (categoryFilter) categoryFilter.value = 'all';
+
+        const genderFilters = document.querySelectorAll('[data-filter="gender"]');
+        genderFilters.forEach(filter => filter.classList.remove('active'));
+        if (genderFilters[0]) genderFilters[0].classList.add('active');
+
+        const scentFilter = document.getElementById('scent-filter');
+        if (scentFilter) scentFilter.value = 'all';
+
+        const priceRange = document.getElementById('price-range');
+        const priceMax = document.getElementById('price-max');
+        if (priceRange && priceMax) {
+            priceRange.value = 1000;
+            priceMax.textContent = 'GH₵1000';
+        }
+
+        const searchInput = document.querySelector('.search-input');
+        if (searchInput) searchInput.value = '';
+
+        // Reapply filters
+        this.applyFilters();
+        this.showAlert('Filters cleared', 'success');
+    }
+
+    // Sort Methods
     sortProducts() {
         switch (this.currentSort) {
             case 'price-low':
@@ -1013,233 +211,429 @@ class ShopPage {
                 this.filteredProducts.sort((a, b) => a.name.localeCompare(b.name));
                 break;
             case 'newest':
-                this.filteredProducts.sort((a, b) => (b.isNew ? 1 : 0) - (a.isNew ? 1 : 0));
+                this.filteredProducts.sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
                 break;
             case 'featured':
             default:
-                this.filteredProducts.sort((a, b) => (b.isBestSeller ? 1 : 0) - (a.isBestSeller ? 1 : 0));
+                // Default sorting - you might want to implement featured logic
+                this.filteredProducts.sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
                 break;
         }
     }
 
-    displayProducts() {
+    // Render Methods
+    renderProducts() {
         const grid = document.getElementById('products-grid');
-        
+        if (!grid) return;
+
         if (this.filteredProducts.length === 0) {
-            this.showNoResults();
+            grid.innerHTML = this.getNoResultsHTML();
             return;
         }
 
-        this.hideNoResults();
+        grid.innerHTML = this.filteredProducts.map(product => this.getProductHTML(product)).join('');
 
-        grid.innerHTML = this.filteredProducts.map(product => `
-            <div class="product-card" data-category="${product.category}" data-scent="${product.scent}">
+        // Add event listeners to product buttons
+        this.attachProductEventListeners();
+    }
+
+    getProductHTML(product) {
+        return `
+            <div class="product-card" data-product-id="${product.id}">
+                ${product.stock_quantity === 0 ? '<div class="product-badge">Out of Stock</div>' : ''}
                 <div class="product-image">
-                    <img src="${product.image}" alt="${product.name}" loading="lazy">
-                    ${product.isNew ? '<span class="product-badge">New</span>' : ''}
-                    ${product.isBestSeller ? '<span class="product-badge" style="background: linear-gradient(135deg, #e74c3c, #c0392b);">Best Seller</span>' : ''}
+                    <img src="${product.image_url || '/static/assets/img/placeholder.jpg'}" 
+                         alt="${product.name}" 
+                         onerror="this.src='/static/assets/img/placeholder.jpg'">
+                    <div class="product-actions">
+                        <button class="wishlist-btn ${this.isInWishlist(product.id) ? 'active' : ''}" 
+                                onclick="shopManager.toggleWishlist(${product.id})"
+                                title="${this.isInWishlist(product.id) ? 'Remove from Wishlist' : 'Add to Wishlist'}">
+                            <i class="${this.isInWishlist(product.id) ? 'fas' : 'far'} fa-heart"></i>
+                        </button>
+                        <button class="quick-view-btn" onclick="shopManager.quickView(${product.id})" title="Quick View">
+                            <i class="fas fa-eye"></i>
+                        </button>
+                    </div>
                 </div>
                 <div class="product-info">
                     <h3 class="product-name">${product.name}</h3>
                     <p class="product-brand">${product.brand}</p>
-                    <p class="product-description">${product.description}</p>
-                    <div class="product-price">
-                        GH₵ ${product.price.toFixed(2)}
-                        ${product.originalPrice > product.price ? 
-                            `<span style="text-decoration: line-through; color: var(--silver); font-size: 0.9rem; margin-left: 8px;">
-                                GH₵ ${product.originalPrice.toFixed(2)}
-                            </span>` : ''
-                        }
+                    <p class="product-price">GH₵${product.price}</p>
+                    <div class="product-meta">
+                        ${product.scent_type ? `<span class="scent-type">${product.scent_type}</span>` : ''}
+                        ${product.gender ? `<span class="gender">${product.gender}</span>` : ''}
                     </div>
-                    <div class="product-actions">
-                        <button class="btn btn-primary" onclick="shopPage.addToCart(${product.id})">
-                            <i class="fas fa-shopping-bag"></i>
-                            Add to Cart
-                        </button>
-                        <button class="btn btn-secondary" onclick="shopPage.addToWishlist(${product.id})">
-                            <i class="fas fa-heart"></i>
-                        </button>
-                    </div>
+                    <button class="add-to-cart-btn" 
+                            onclick="shopManager.addToCart(${product.id})"
+                            ${product.stock_quantity === 0 ? 'disabled' : ''}>
+                        ${product.stock_quantity === 0 ? 'Out of Stock' : 'Add to Cart'}
+                    </button>
                 </div>
             </div>
-        `).join('');
+        `;
     }
 
-    updateResultsCount() {
-        const countElement = document.getElementById('products-count');
-        countElement.textContent = this.filteredProducts.length;
+    getNoResultsHTML() {
+        return `
+            <div class="no-results">
+                <i class="fas fa-search"></i>
+                <h3>No fragrances found</h3>
+                <p>Try adjusting your filters or search terms</p>
+                <button class="btn btn-primary" onclick="shopManager.clearFilters()">Clear All Filters</button>
+            </div>
+        `;
     }
 
-    showNoResults() {
-        document.getElementById('products-grid').style.display = 'none';
-        document.getElementById('no-results').style.display = 'block';
-        document.getElementById('loading-state').style.display = 'none';
-    }
+    renderCategoryFilters(categories) {
+        const categoryFilter = document.getElementById('category-filter');
+        const scentFilter = document.getElementById('scent-filter');
 
-    hideNoResults() {
-        document.getElementById('products-grid').style.display = 'grid';
-        document.getElementById('no-results').style.display = 'none';
-    }
-
-    hideLoadingState() {
-        document.getElementById('loading-state').style.display = 'none';
-    }
-
-    clearAllFilters() {
-        // Reset all filter buttons
-        document.querySelectorAll('.filter-btn').forEach(btn => {
-            btn.classList.remove('active');
-        });
-
-        // Reset gender filter to 'all'
-        document.querySelector('[data-filter="all"]').classList.add('active');
-
-        // Reset price slider
-        document.getElementById('price-range').value = 1000;
-        document.getElementById('price-max').textContent = 'GH₵ 1000';
-
-        // Reset sort to featured
-        document.getElementById('sort-by').value = 'featured';
-
-        // Reset current filters
-        this.currentFilters = {
-            gender: 'all',
-            scent: '',
-            brand: '',
-            mood: '',
-            season: '',
-            maxPrice: 1000
-        };
-
-        this.currentSort = 'featured';
-        this.applyFilters();
-    }
-
-    addToCart(productId) {
-        const product = this.products.find(p => p.id === productId);
-        if (product) {
-            // Get current cart from localStorage
-            let cart = JSON.parse(localStorage.getItem('cart')) || [];
-            
-            // Check if product already in cart
-            const existingItem = cart.find(item => item.id === productId);
-            
-            if (existingItem) {
-                existingItem.quantity += 1;
-            } else {
-                cart.push({
-                    ...product,
-                    quantity: 1
-                });
-            }
-            
-            // Save back to localStorage
-            localStorage.setItem('cart', JSON.stringify(cart));
-            
-            // Update cart count
-            this.updateCartCount();
-            
-            this.showNotification(`${product.name} added to cart!`, 'success');
+        if (categoryFilter) {
+            categoryFilter.innerHTML = `
+                <option value="all">All Categories</option>
+                ${categories.map(cat => `<option value="${cat.name}">${cat.name}</option>`).join('')}
+            `;
         }
+
+        if (scentFilter) {
+            // You might want to get scent types from your products or define them
+            const scentTypes = ['Woody', 'Floral', 'Citrus', 'Oriental', 'Fresh', 'Spicy'];
+            scentFilter.innerHTML = `
+                <option value="all">All Scents</option>
+                ${scentTypes.map(scent => `<option value="${scent}">${scent}</option>`).join('')}
+            `;
+        }
+    }
+
+    attachProductEventListeners() {
+        // Additional event listeners can be added here if needed
+    }
+
+    // Product Interaction Methods
+    async addToCart(productId, quantity = 1) {
+        if (!window.app.currentUser) {
+            window.app.showModal('login-modal');
+            return false;
+        }
+
+        try {
+            const sessionToken = localStorage.getItem('sessionToken');
+            const response = await fetch('/api/cart', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': sessionToken
+                },
+                body: JSON.stringify({ product_id: productId, quantity })
+            });
+
+            if (response.ok) {
+                this.updateCartButton(productId, true);
+                window.app.updateCartCount();
+                this.showAlert('Product added to cart!', 'success');
+                
+                // Update user dashboard if open
+                if (window.userDashboard) {
+                    window.userDashboard.loadCart();
+                }
+                return true;
+            } else {
+                this.showAlert('Failed to add product to cart', 'error');
+                return false;
+            }
+        } catch (error) {
+            console.error('Add to cart error:', error);
+            this.showAlert('Error adding to cart', 'error');
+            return false;
+        }
+    }
+
+    async toggleWishlist(productId) {
+        if (!window.app.currentUser) {
+            window.app.showModal('login-modal');
+            return;
+        }
+
+        try {
+            const sessionToken = localStorage.getItem('sessionToken');
+            const isInWishlist = this.isInWishlist(productId);
+
+            const response = await fetch(`/api/wishlist${isInWishlist ? `/${productId}` : ''}`, {
+                method: isInWishlist ? 'DELETE' : 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': sessionToken
+                },
+                body: isInWishlist ? undefined : JSON.stringify({ product_id: productId })
+            });
+
+            if (response.ok) {
+                if (isInWishlist) {
+                    this.removeFromWishlist(productId);
+                    this.showAlert('Removed from wishlist', 'success');
+                } else {
+                    this.addToWishlist(productId);
+                    this.showAlert('Added to wishlist!', 'success');
+                }
+                this.updateWishlistButton(productId, !isInWishlist);
+                window.app.updateWishlistCount();
+                
+                // Update user dashboard if open
+                if (window.userDashboard) {
+                    window.userDashboard.loadWishlist();
+                }
+            }
+        } catch (error) {
+            console.error('Wishlist toggle error:', error);
+            this.showAlert('Error updating wishlist', 'error');
+        }
+    }
+
+    async quickView(productId) {
+        try {
+            const response = await fetch(`/api/products/${productId}`);
+            const product = await response.json();
+
+            if (response.ok) {
+                this.showQuickViewModal(product);
+            }
+        } catch (error) {
+            console.error('Quick view error:', error);
+            this.showAlert('Error loading product details', 'error');
+        }
+    }
+
+    // Wishlist Management
+    isInWishlist(productId) {
+        // This would typically check against a stored wishlist array
+        // For now, we'll check the button state
+        const wishlistBtn = document.querySelector(`.wishlist-btn[onclick="shopManager.toggleWishlist(${productId})"]`);
+        return wishlistBtn ? wishlistBtn.classList.contains('active') : false;
     }
 
     addToWishlist(productId) {
-        const product = this.products.find(p => p.id === productId);
-        if (product) {
-            // Get current wishlist from localStorage
-            let wishlist = JSON.parse(localStorage.getItem('wishlist')) || [];
+        const wishlistBtn = document.querySelector(`.wishlist-btn[onclick="shopManager.toggleWishlist(${productId})"]`);
+        if (wishlistBtn) {
+            wishlistBtn.classList.add('active');
+            wishlistBtn.innerHTML = '<i class="fas fa-heart"></i>';
+            wishlistBtn.title = 'Remove from Wishlist';
+        }
+    }
+
+    removeFromWishlist(productId) {
+        const wishlistBtn = document.querySelector(`.wishlist-btn[onclick="shopManager.toggleWishlist(${productId})"]`);
+        if (wishlistBtn) {
+            wishlistBtn.classList.remove('active');
+            wishlistBtn.innerHTML = '<i class="far fa-heart"></i>';
+            wishlistBtn.title = 'Add to Wishlist';
+        }
+    }
+
+    // UI Update Methods
+    updateResultsCount() {
+        const resultsCount = document.getElementById('products-count');
+        if (resultsCount) {
+            resultsCount.textContent = this.filteredProducts.length;
+        }
+    }
+
+    updateCartButton(productId, added = false) {
+        const button = document.querySelector(`.add-to-cart-btn[onclick="shopManager.addToCart(${productId})"]`);
+        if (button && added) {
+            const originalText = button.textContent;
+            button.textContent = 'Added!';
+            button.style.background = 'var(--success)';
             
-            // Check if product already in wishlist
-            const existingItem = wishlist.find(item => item.id === productId);
-            
-            if (!existingItem) {
-                wishlist.push(product);
-                localStorage.setItem('wishlist', JSON.stringify(wishlist));
-                
-                // Update wishlist count
-                this.updateWishlistCount();
-                
-                this.showNotification(`${product.name} added to wishlist!`, 'success');
+            setTimeout(() => {
+                button.textContent = originalText;
+                button.style.background = '';
+            }, 2000);
+        }
+    }
+
+    updateWishlistButton(productId, isInWishlist) {
+        const button = document.querySelector(`.wishlist-btn[onclick="shopManager.toggleWishlist(${productId})"]`);
+        if (button) {
+            if (isInWishlist) {
+                button.classList.add('active');
+                button.innerHTML = '<i class="fas fa-heart"></i>';
+                button.title = 'Remove from Wishlist';
             } else {
-                this.showNotification(`${product.name} is already in your wishlist!`, 'info');
+                button.classList.remove('active');
+                button.innerHTML = '<i class="far fa-heart"></i>';
+                button.title = 'Add to Wishlist';
             }
         }
     }
 
-    updateCartCount() {
-        const cart = JSON.parse(localStorage.getItem('cart')) || [];
-        const totalItems = cart.reduce((sum, item) => sum + item.quantity, 0);
-        
-        // Update all cart count elements
-        document.querySelectorAll('#cart-count').forEach(element => {
-            element.textContent = totalItems;
-        });
-    }
+    // Modal Methods
+    showQuickViewModal(product) {
+        const modalHTML = `
+            <div id="quick-view-modal" class="modal">
+                <div class="modal-content quick-view-modal">
+                    <div class="quick-view-content">
+                        <div class="quick-view-image">
+                            <img src="${product.image_url || '/static/assets/img/placeholder.jpg'}" 
+                                 alt="${product.name}"
+                                 onerror="this.src='/static/assets/img/placeholder.jpg'">
+                        </div>
+                        <div class="quick-view-details">
+                            <button class="close-modal">&times;</button>
+                            <h2>${product.name}</h2>
+                            <p class="quick-view-brand">${product.brand}</p>
+                            <p class="quick-view-price">GH₵${product.price}</p>
+                            <p class="quick-view-description">${product.description || 'No description available.'}</p>
+                            
+                            <div class="quick-view-meta">
+                                ${product.category_name ? `
+                                    <div class="meta-item">
+                                        <span class="meta-label">Category</span>
+                                        <span class="meta-value">${product.category_name}</span>
+                                    </div>
+                                ` : ''}
+                                ${product.scent_type ? `
+                                    <div class="meta-item">
+                                        <span class="meta-label">Scent Type</span>
+                                        <span class="meta-value">${product.scent_type}</span>
+                                    </div>
+                                ` : ''}
+                                ${product.gender ? `
+                                    <div class="meta-item">
+                                        <span class="meta-label">Gender</span>
+                                        <span class="meta-value">${product.gender}</span>
+                                    </div>
+                                ` : ''}
+                                ${product.mood ? `
+                                    <div class="meta-item">
+                                        <span class="meta-label">Mood</span>
+                                        <span class="meta-value">${product.mood}</span>
+                                    </div>
+                                ` : ''}
+                            </div>
 
-    updateWishlistCount() {
-        const wishlist = JSON.parse(localStorage.getItem('wishlist')) || [];
-        
-        // Update all wishlist count elements
-        document.querySelectorAll('#wishlist-count').forEach(element => {
-            element.textContent = wishlist.length;
-        });
-    }
-    showNotification(message, type = 'info') {
-        // Create notification element
-        const notification = document.createElement('div');
-        notification.className = `notification notification-${type}`;
-        notification.innerHTML = `
-            <div class="notification-content">
-                <i class="fas fa-${type === 'success' ? 'check-circle' : 'info-circle'}"></i>
-                <span>${message}</span>
+                            <div class="quantity-selector">
+                                <span>Quantity:</span>
+                                <button class="quantity-btn" onclick="shopManager.updateQuantity(-1)">-</button>
+                                <span class="quantity-display" id="quick-view-quantity">1</span>
+                                <button class="quantity-btn" onclick="shopManager.updateQuantity(1)">+</button>
+                            </div>
+
+                            <div class="quick-view-actions">
+                                <button class="add-to-cart-btn" style="flex: 2;" 
+                                        onclick="shopManager.addToCartFromQuickView(${product.id})">
+                                    Add to Cart
+                                </button>
+                                <button class="wishlist-btn ${this.isInWishlist(product.id) ? 'active' : ''}" 
+                                        style="flex: 1;"
+                                        onclick="shopManager.toggleWishlist(${product.id})">
+                                    <i class="${this.isInWishlist(product.id) ? 'fas' : 'far'} fa-heart"></i>
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
             </div>
         `;
 
-        // Add styles if not already added
-        if (!document.querySelector('#notification-styles')) {
-            const styles = document.createElement('style');
-            styles.id = 'notification-styles';
-            styles.textContent = `
-                .notification {
-                    position: fixed;
-                    top: 100px;
-                    right: 20px;
-                    background: white;
-                    padding: 15px 20px;
-                    border-radius: 8px;
-                    box-shadow: 0 4px 15px rgba(0,0,0,0.2);
-                    border-left: 4px solid var(--gold);
-                    z-index: 10000;
-                    transform: translateX(400px);
-                    transition: transform 0.3s ease;
-                }
-                .notification-success {
-                    border-left-color: #27ae60;
-                }
-                .notification-info {
-                    border-left-color: #2980b9;
-                }
-        }        `;
-            document.head.appendChild(styles);
+        // Remove existing modal
+        const existingModal = document.getElementById('quick-view-modal');
+        if (existingModal) {
+            existingModal.remove();
         }
-        document.body.appendChild(notification);
 
-        // Trigger slide-in
-        setTimeout(() => {
-            notification.style.transform = 'translateX(0)';
-        }, 100);   
-        // Auto-remove after 3 seconds
-        setTimeout(() => {
-            notification.style.transform = 'translateX(400px)';
-        }, 3000);
-        setTimeout(() => {
-            notification.remove();
-        }, 3300);
+        // Add new modal
+        document.body.insertAdjacentHTML('beforeend', modalHTML);
+        
+        // Show modal
+        const modal = document.getElementById('quick-view-modal');
+        modal.style.display = 'block';
+
+        // Add event listeners
+        const closeBtn = modal.querySelector('.close-modal');
+        closeBtn.addEventListener('click', () => {
+            modal.remove();
+        });
+
+        modal.addEventListener('click', (e) => {
+            if (e.target === modal) {
+                modal.remove();
+            }
+        });
     }
-    closeMobileMenu() {
-        document.getElementById('mobile-menu').classList.remove('open');
+
+    updateQuantity(change) {
+        const quantityDisplay = document.getElementById('quick-view-quantity');
+        if (quantityDisplay) {
+            let quantity = parseInt(quantityDisplay.textContent) + change;
+            quantity = Math.max(1, quantity); // Minimum quantity is 1
+            quantityDisplay.textContent = quantity;
+        }
+    }
+
+    async addToCartFromQuickView(productId) {
+        const quantityDisplay = document.getElementById('quick-view-quantity');
+        const quantity = quantityDisplay ? parseInt(quantityDisplay.textContent) : 1;
+        
+        if (!window.app.currentUser) {
+            window.app.showModal('login-modal');
+            return;
+        }
+
+        try {
+            const sessionToken = localStorage.getItem('sessionToken');
+            const response = await fetch('/api/cart', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': sessionToken
+                },
+                body: JSON.stringify({ product_id: productId, quantity })
+            });
+
+            if (response.ok) {
+                window.app.updateCartCount();
+                this.showAlert('Product added to cart!', 'success');
+                
+                // Close quick view modal
+                const modal = document.getElementById('quick-view-modal');
+                if (modal) {
+                    modal.remove();
+                }
+            } else {
+                this.showAlert('Failed to add product to cart', 'error');
+            }
+        } catch (error) {
+            console.error('Add to cart error:', error);
+            this.showAlert('Error adding to cart', 'error');
+        }
+    }
+
+    // Search Methods
+    searchProducts(searchTerm) {
+        this.filters.search = searchTerm;
+        this.applyFilters();
+    }
+
+    // Utility Methods
+    showAlert(message, type = 'info') {
+        window.app.showAlert(message, type);
+    }
+
+    setupEventListeners() {
+        // Escape key to close modals
+        document.addEventListener('keydown', (e) => {
+            if (e.key === 'Escape') {
+                const modal = document.getElementById('quick-view-modal');
+                if (modal) {
+                    modal.remove();
+                }
+            }
+        });
     }
 }
 
-// Initialize shop page
-const shopPage = new ShopPage();
+// Initialize shop manager when DOM is loaded
+document.addEventListener('DOMContentLoaded', () => {
+    window.shopManager = new ShopManager();
+});

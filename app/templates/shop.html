@@ -4,14 +4,22 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Shop Fragrances | H&T Luxe Scents</title>
-    <link rel="stylesheet" href="static/css/style.css">
-    <link rel="stylesheet" href="static/css/shop.css">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/shop.css') }}">
     <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;500;600&family=Montserrat:wght@300;400;500&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
 </head>
 <body>
-
-    <!-- Christmas Sticky Banner -->
+    <!-- Sticky Banner 
+    <div class="sticky-banner">
+        <div class="banner-container">
+            <span class="banner-text">✨ Free Shipping on Orders Over GH₵2000 | Limited Time Offer</span>
+            <a href="tel:+233591373371" class="call-now-btn">
+                <i class="fas fa-phone"></i> Call Now: +233 591 373 371
+            </a>
+        </div>
+    </div> -->
+    <!-- Christmas Sticky Banner 
     <div class="sticky-banner">
         <div class="banner-container">
             <div class="banner-left">
@@ -39,12 +47,11 @@
                 </div>
             </div>
         </div>
-    </div>
+    </div> -->
 
     <!-- Navigation -->
     <nav class="navbar">
         <div class="nav-container">
-            <!-- Main Navigation -->
             <div class="nav-main">
                 <!-- Hamburger Menu -->
                 <div class="hamburger">
@@ -60,10 +67,11 @@
 
                 <!-- Navigation Menu -->
                 <div class="nav-menu">
-                    <a href="index.html" class="nav-link">Home</a>
-                    <a href="shop.html" class="nav-link active">Shop</a>
-                    <a href="index.html#about" class="nav-link">About</a>
-                    <a href="index.html#contact" class="nav-link">Contact</a>
+                    <a href="{{ url_for('index') }}" class="nav-link">Home</a>
+                    <a href="{{ url_for('shop') }}" class="nav-link active">Shop</a>
+                    <a href="{{ url_for('index') }}#collections" class="nav-link">Collections</a>
+                    <a href="{{ url_for('index') }}#about" class="nav-link">About</a>
+                    <a href="{{ url_for('index') }}#contact" class="nav-link">Contact</a>
                 </div>
 
                 <!-- Right Side Actions -->
@@ -91,15 +99,15 @@
                         </div>
 
                         <!-- Wishlist -->
-                        <a href="user-interface.html#wishlist" class="icon-link" title="Wishlist">
+                        <a href="{{ url_for('user_dashboard') }}#wishlist" class="icon-link" title="Wishlist">
                             <i class="fas fa-heart"></i>
-                            <span class="icon-badge" id="wishlist-count">0</span>
+                            <span class="icon-badge wishlist-count">0</span>
                         </a>
 
                         <!-- Cart -->
-                        <a href="user-interface.html#cart" class="icon-link" title="Shopping Cart">
+                        <a href="{{ url_for('user_dashboard') }}#cart" class="icon-link" title="Shopping Cart">
                             <i class="fas fa-shopping-bag"></i>
-                            <span class="icon-badge" id="cart-count">0</span>
+                            <span class="icon-badge cart-count">0</span>
                         </a>
                     </div>
                 </div>
@@ -122,19 +130,19 @@
                 <div class="mobile-menu-section">
                     <h4>Shop By Category</h4>
                     <div class="mobile-menu-links">
-                        <a href="#him" class="mobile-menu-link" data-filter="men">
+                        <a href="{{ url_for('shop') }}?gender=men" class="mobile-menu-link">
                             <i class="fas fa-mars"></i>
                             For Him
                         </a>
-                        <a href="#her" class="mobile-menu-link" data-filter="women">
+                        <a href="{{ url_for('shop') }}?gender=women" class="mobile-menu-link">
                             <i class="fas fa-venus"></i>
                             For Her
                         </a>
-                        <a href="#unisex" class="mobile-menu-link" data-filter="unisex">
+                        <a href="{{ url_for('shop') }}?gender=unisex" class="mobile-menu-link">
                             <i class="fas fa-venus-mars"></i>
                             Unisex
                         </a>
-                        <a href="#luxury" class="mobile-menu-link">
+                        <a href="{{ url_for('shop') }}?category=Luxury Collection" class="mobile-menu-link">
                             <i class="fas fa-crown"></i>
                             Luxury Brands
                         </a>
@@ -166,10 +174,11 @@
                 <!-- Main Navigation in Mobile -->
                 <div class="mobile-menu-section">
                     <div class="mobile-menu-links">
-                        <a href="index.html" class="mobile-menu-link">Home</a>
-                        <a href="shop.html" class="mobile-menu-link">Shop</a>
-                        <a href="index.html#about" class="mobile-menu-link">About</a>
-                        <a href="index.html#contact" class="mobile-menu-link">Contact</a>
+                        <a href="{{ url_for('index') }}" class="mobile-menu-link">Home</a>
+                        <a href="{{ url_for('shop') }}" class="mobile-menu-link">Shop</a>
+                        <a href="{{ url_for('index') }}#collections" class="mobile-menu-link">Collections</a>
+                        <a href="{{ url_for('index') }}#about" class="mobile-menu-link">About</a>
+                        <a href="{{ url_for('index') }}#contact" class="mobile-menu-link">Contact</a>
                     </div>
                 </div>
             </div>
@@ -195,14 +204,25 @@
                     <div class="filter-section">
                         <h3>Filter By</h3>
                         
+                        <!-- Category Filter -->
+                        <div class="filter-group">
+                            <h4>Category</h4>
+                            <div class="filter-options">
+                                <select id="category-filter" class="filter-select">
+                                    <option value="all">All Categories</option>
+                                    <!-- Categories will be populated by JavaScript -->
+                                </select>
+                            </div>
+                        </div>
+
                         <!-- Gender Filter -->
                         <div class="filter-group">
                             <h4>Gender</h4>
                             <div class="filter-options">
-                                <button class="filter-btn active" data-filter="all">All Fragrances</button>
-                                <button class="filter-btn" data-filter="men">For Him</button>
-                                <button class="filter-btn" data-filter="women">For Her</button>
-                                <button class="filter-btn" data-filter="unisex">Unisex</button>
+                                <button class="filter-btn active" data-filter="gender" data-value="all">All</button>
+                                <button class="filter-btn" data-filter="gender" data-value="men">For Him</button>
+                                <button class="filter-btn" data-filter="gender" data-value="women">For Her</button>
+                                <button class="filter-btn" data-filter="gender" data-value="unisex">Unisex</button>
                             </div>
                         </div>
 
@@ -210,46 +230,15 @@
                         <div class="filter-group">
                             <h4>Scent Type</h4>
                             <div class="filter-options">
-                                <button class="filter-btn" data-scent="woody">Woody</button>
-                                <button class="filter-btn" data-scent="floral">Floral</button>
-                                <button class="filter-btn" data-scent="citrus">Citrus</button>
-                                <button class="filter-btn" data-scent="oriental">Oriental</button>
-                                <button class="filter-btn" data-scent="fresh">Fresh</button>
-                                <button class="filter-btn" data-scent="spicy">Spicy</button>
-                            </div>
-                        </div>
-
-                        <!-- Brand Filter -->
-                        <div class="filter-group">
-                            <h4>Brand</h4>
-                            <div class="filter-options">
-                                <button class="filter-btn" data-brand="Fragrance World">Fragrance World</button>
-                                <button class="filter-btn" data-brand="Lattafa">Lattafa</button>
-                                <button class="filter-btn" data-brand="L'Affair">L'Affair</button>
-                                <button class="filter-btn" data-brand="Efolia">Efolia</button>
-                            </div>
-                        </div>
-
-                        <!-- Mood Filter -->
-                        <div class="filter-group">
-                            <h4>Mood</h4>
-                            <div class="filter-options">
-                                <button class="filter-btn" data-mood="romantic">Romantic</button>
-                                <button class="filter-btn" data-mood="energetic">Energetic</button>
-                                <button class="filter-btn" data-mood="calm">Calm</button>
-                                <button class="filter-btn" data-mood="confident">Confident</button>
-                                <button class="filter-btn" data-mood="sophisticated">Sophisticated</button>
-                            </div>
-                        </div>
-
-                        <!-- Season Filter -->
-                        <div class="filter-group">
-                            <h4>Season</h4>
-                            <div class="filter-options">
-                                <button class="filter-btn" data-season="spring">Spring</button>
-                                <button class="filter-btn" data-season="summer">Summer</button>
-                                <button class="filter-btn" data-season="autumn">Autumn</button>
-                                <button class="filter-btn" data-season="winter">Winter</button>
+                                <select id="scent-filter" class="filter-select">
+                                    <option value="all">All Scents</option>
+                                    <option value="Woody">Woody</option>
+                                    <option value="Floral">Floral</option>
+                                    <option value="Citrus">Citrus</option>
+                                    <option value="Oriental">Oriental</option>
+                                    <option value="Fresh">Fresh</option>
+                                    <option value="Spicy">Spicy</option>
+                                </select>
                             </div>
                         </div>
 
@@ -277,7 +266,7 @@
                 <main class="products-main">
                     <div class="products-header">
                         <div class="results-count">
-                            <span id="products-count">12</span> products found
+                            <span id="products-count">0</span> products found
                         </div>
                         <div class="sort-options">
                             <select id="sort-by">
@@ -292,12 +281,10 @@
 
                     <div class="products-grid" id="products-grid">
                         <!-- Products will be loaded here by JavaScript -->
-                    </div>
-
-                    <!-- Loading State -->
-                    <div class="loading-state" id="loading-state">
-                        <i class="fas fa-spinner fa-spin"></i>
-                        <p>Loading fragrances...</p>
+                        <div class="loading-state">
+                            <i class="fas fa-spinner fa-spin"></i>
+                            <p>Loading fragrances...</p>
+                        </div>
                     </div>
 
                     <!-- No Results State -->
@@ -305,7 +292,7 @@
                         <i class="fas fa-search"></i>
                         <h3>No fragrances found</h3>
                         <p>Try adjusting your filters or search terms</p>
-                        <button class="btn btn-primary" onclick="clearAllFilters()">Clear All Filters</button>
+                        <button class="btn btn-primary" onclick="shopManager.clearFilters()">Clear All Filters</button>
                     </div>
                 </main>
             </div>
@@ -323,11 +310,11 @@
                 <div class="footer-section">
                     <h4>Quick Links</h4>
                     <ul>
-                        <li><a href="index.html">Home</a></li>
-                        <li><a href="shop.html">Shop</a></li>
-                        <li><a href="index.html#collections">Collections</a></li>
-                        <li><a href="index.html#about">About</a></li>
-                        <li><a href="index.html#contact">Contact</a></li>
+                        <li><a href="{{ url_for('index') }}">Home</a></li>
+                        <li><a href="{{ url_for('shop') }}">Shop</a></li>
+                        <li><a href="{{ url_for('index') }}#collections">Collections</a></li>
+                        <li><a href="{{ url_for('index') }}#about">About</a></li>
+                        <li><a href="{{ url_for('index') }}#contact">Contact</a></li>
                     </ul>
                 </div>
                 <div class="footer-section">
@@ -350,8 +337,8 @@
                 </div>
             </div>
             <div class="footer-bottom">
-                <p>&copy; 2025 H&T Luxe Scents. All rights reserved.</p>
-                <a href="admin-interface.html" class="admin-link">Admin Login</a>
+                <p>&copy; 2024 H&T Luxe Scents. All rights reserved.</p>
+                <a href="{{ url_for('admin_dashboard') }}" class="admin-link">Admin Login</a>
             </div>
         </div>
     </footer>
@@ -367,8 +354,11 @@
                 <div class="form-group">
                     <input type="email" id="login-email" placeholder="Email Address" required>
                 </div>
-                <div class="form-group">
+                <div class="form-group password-container">
                     <input type="password" id="login-password" placeholder="Password" required>
+                    <button type="button" class="toggle-password" data-target="login-password">
+                        <i class="fas fa-eye"></i>
+                    </button>
                 </div>
                 <button type="submit" class="submit-button" style="width: 100%;">
                     <i class="fas fa-sign-in-alt"></i> Sign In
@@ -397,11 +387,17 @@
                 <div class="form-group">
                     <input type="email" id="signup-email" placeholder="Email Address" required>
                 </div>
-                <div class="form-group">
+                <div class="form-group password-container">
                     <input type="password" id="signup-password" placeholder="Password" required minlength="6">
+                    <button type="button" class="toggle-password" data-target="signup-password">
+                        <i class="fas fa-eye"></i>
+                    </button>
                 </div>
-                <div class="form-group">
+                <div class="form-group password-container">
                     <input type="password" id="signup-confirm-password" placeholder="Confirm Password" required>
+                    <button type="button" class="toggle-password" data-target="signup-confirm-password">
+                        <i class="fas fa-eye"></i>
+                    </button>
                 </div>
                 <button type="submit" class="submit-button" style="width: 100%;">
                     <i class="fas fa-user-plus"></i> Create Account
@@ -416,9 +412,7 @@
         </div>
     </div>
 
-    <script src="static/js/main.js"></script>
-    <script src="static/js/user.js"></script>
-    <script src="static/js/shop.js"></script>
-    <script src="static/js/global-search.js"></script>
+    <script src="{{ url_for('static', filename='js/main.js') }}"></script>
+    <script src="{{ url_for('static', filename='js/shop.js') }}"></script>
 </body>
 </html>

@@ -1,575 +1,665 @@
-// Admin Interface JavaScript
-
-// Admin credentials
-const ADMIN_CREDENTIALS = {
-    username: 'H&T_Luxe_Scents',
-    password: 'HamSahLati'
-};
-
-// Sample data (in a real app, this would come from backend)
-let adminProducts = [
-    {
-        id: 1,
-        name: "Midnight Oud",
-        brand: "H&T Luxe",
-        price: 89.99,
-        category: "men",
-        description: "A rich and intense fragrance with oud wood notes",
-        image: "https://images.unsplash.com/photo-1590736969953-7ce4d1c63f55?ixlib=rb-4.0.3&auto=format&fit=crop&w=500&q=80"
-    },
-    {
-        id: 2,
-        name: "Velvet Rose",
-        brand: "H&T Luxe",
-        price: 79.99,
-        category: "women",
-        description: "Elegant floral scent with rose and jasmine notes",
-        image: "https://images.unsplash.com/photo-1590737400275-54a5c7f4ecc8?ixlib=rb-4.0.3&auto=format&fit=crop&w=500&q=80"
-    }
-];
-
-let categories = [
-    { id: 1, name: "Men", description: "Fragrances for men" },
-    { id: 2, name: "Women", description: "Fragrances for women" },
-    { id: 3, name: "Unisex", description: "Unisex fragrances" }
-];
-
-let messages = [
-    { 
-        id: 1, 
-        name: "John Doe", 
-        email: "john@example.com", 
-        message: "I love your products! When will you have new arrivals?", 
-        date: "2025-10-15" 
-    },
-    { 
-        id: 2, 
-        name: "Jane Smith", 
-        email: "jane@example.com", 
-        message: "Do you ship internationally?", 
-        date: "2025-10-14" 
-    }
-];
-
-let reviews = [
-    { 
-        id: 1, 
-        product: "Midnight Oud", 
-        user: "Mike Johnson", 
-        rating: 5, 
-        review: "Amazing fragrance! Lasts all day.", 
-        date: "2025-10-13" 
-    }
-];
-
-let wishlists = [
-    { user: "Sarah Wilson", product: "Velvet Rose", addedDate: "2025-10-12" }
-];
-
-let discounts = [
-    { code: "WELCOME10", percentage: 10, startDate: "2025-10-01", endDate: "2025-12-31", status: "Active" }
-];
-
-
-// Alert function for admin
-function showAlert(message, type = 'info') {
-    const existingAlert = document.querySelector('.alert-message');
-    if (existingAlert) {
-        existingAlert.remove();
+// Admin Dashboard JavaScript
+class AdminManager {
+    constructor() {
+        this.products = [];
+        this.categories = [];
+        this.messages = [];
+        this.reviews = [];
+        this.stats = {};
+        this.currentSection = 'dashboard';
+        this.init();
     }
 
-    const alertElement = document.createElement('div');
-    alertElement.className = `alert-message alert-${type}`;
-    alertElement.innerHTML = `
-        <div style="display: flex; align-items: center; gap: 10px;">
-            <i class="fas ${type === 'success' ? 'fa-check-circle' : type === 'error' ? 'fa-exclamation-triangle' : 'fa-info-circle'}"></i>
-            <span>${message}</span>
-        </div>
-    `;
-    
-    alertElement.style.cssText = `
-        position: fixed;
-        top: 120px;
-        right: 20px;
-        padding: 15px 20px;
-        border-radius: 12px;
-        color: white;
-        font-weight: 600;
-        z-index: 3000;
-        animation: slideIn 0.3s ease;
-        min-width: 300px;
-        backdrop-filter: blur(10px);
-        ${type === 'success' ? 
-            'background: linear-gradient(135deg, rgba(39, 174, 96, 0.95), rgba(46, 204, 113, 0.95));' : 
-            type === 'error' ?
-            'background: linear-gradient(135deg, rgba(231, 76, 60, 0.95), rgba(192, 57, 43, 0.95));' :
-            'background: linear-gradient(135deg, rgba(52, 152, 219, 0.95), rgba(41, 128, 185, 0.95));'
-        }
-        box-shadow: 0 8px 32px rgba(0,0,0,0.2);
-        border: 1px solid rgba(255,255,255,0.2);
-    `;
+    async init() {
+        await this.checkAuth();
+        this.setupNavigation();
+        this.setupEventListeners();
+        this.loadDashboardStats();
+    }
 
-    document.body.appendChild(alertElement);
-
-    setTimeout(() => {
-        alertElement.style.animation = 'slideOut 0.3s ease';
-        setTimeout(() => alertElement.remove(), 300);
-    }, 4000);
-}
-
-// Add CSS for alert animations (only if not already added)
-if (!document.querySelector('style[data-alert-animations]')) {
-    const alertStyle = document.createElement('style');
-    alertStyle.setAttribute('data-alert-animations', 'true');
-    alertStyle.textContent = `
-        @keyframes slideIn {
-            from { transform: translateX(100%); opacity: 0; }
-            to { transform: translateX(0); opacity: 1; }
-        }
-        
-        @keyframes slideOut {
-            from { transform: translateX(0); opacity: 1; }
-            to { transform: translateX(100%); opacity: 0; }
-        }
-    `;
-    document.head.appendChild(alertStyle);
-}
-
-
-// Login functionality
-function setupLogin() {
-    const loginForm = document.getElementById('login-form');
-    
-    if (loginForm) {
-        loginForm.addEventListener('submit', function(e) {
-            e.preventDefault();
+    async checkAuth() {
+        try {
+            const response = await fetch('/api/admin/check-auth');
+            const data = await response.json();
             
-            const username = document.getElementById('username').value;
-            const password = document.getElementById('password').value;
-            
-            if (username === ADMIN_CREDENTIALS.username && password === ADMIN_CREDENTIALS.password) {
-                // Successful login
+            if (!data.authenticated) {
+                document.getElementById('admin-login').style.display = 'block';
+                document.getElementById('admin-dashboard').style.display = 'none';
+            } else {
                 document.getElementById('admin-login').style.display = 'none';
                 document.getElementById('admin-dashboard').style.display = 'block';
-                
-                // Initialize dashboard
-                initializeDashboard();
-            } else {
-                showAlert('Invalid credentials! Please try again.', 'error');
+                this.loadInitialData();
             }
-        });
+        } catch (error) {
+            console.error('Auth check failed:', error);
+        }
     }
-}
 
-// Logout functionality
-function setupLogout() {
-    const logoutBtn = document.getElementById('logout-btn');
-    
-    if (logoutBtn) {
-        logoutBtn.addEventListener('click', function() {
-            document.getElementById('admin-dashboard').style.display = 'none';
-            document.getElementById('admin-login').style.display = 'flex';
-            
-            // Clear form fields
-            document.getElementById('login-form').reset();
-            showAlert('Logged out successfully', 'info');
-        });
-    }
-}
-
-// Navigation functionality
-function setupNavigation() {
-    const navItems = document.querySelectorAll('.nav-item');
-    
-    navItems.forEach(item => {
-        item.addEventListener('click', function(e) {
-            e.preventDefault();
-            
-            // Remove active class from all items
-            navItems.forEach(nav => nav.classList.remove('active'));
-            
-            // Add active class to clicked item
-            this.classList.add('active');
-            
-            // Get target section
-            const targetSection = this.getAttribute('data-section');
-            
-            // Hide all sections
-            document.querySelectorAll('.admin-section').forEach(section => {
-                section.classList.remove('active');
+    async login(username, password) {
+        try {
+            const response = await fetch('/api/admin/login', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({ username, password })
             });
-            
-            // Show target section
-            document.getElementById(targetSection).classList.add('active');
+
+            if (response.ok) {
+                location.reload();
+            } else {
+                this.showAlert('Invalid credentials', 'error');
+            }
+        } catch (error) {
+            console.error('Login error:', error);
+            this.showAlert('Login failed', 'error');
+        }
+    }
+
+    async logout() {
+        try {
+            await fetch('/api/admin/logout');
+            location.reload();
+        } catch (error) {
+            console.error('Logout error:', error);
+        }
+    }
+
+    // Navigation Methods
+    setupNavigation() {
+        const navItems = document.querySelectorAll('.nav-item');
+        navItems.forEach(item => {
+            item.addEventListener('click', (e) => {
+                e.preventDefault();
+                const section = item.dataset.section;
+                this.showSection(section);
+            });
         });
-    });
-}
 
-// Initialize Dashboard
-function initializeDashboard() {
-    updateStats();
-    displayProducts();
-    displayCategories();
-    displayMessages();
-    displayReviews();
-    displayWishlists();
-    displayDiscounts();
-    setupProductForm();
-    setupCategoryForm();
-    setupDiscountForm();
-}
+        // Logout button
+        const logoutBtn = document.getElementById('logout-btn');
+        if (logoutBtn) {
+            logoutBtn.addEventListener('click', () => {
+                this.logout();
+            });
+        }
 
-// Update Dashboard Stats
-function updateStats() {
-    document.getElementById('total-products').textContent = adminProducts.length;
-    document.getElementById('total-messages').textContent = messages.length;
-    document.getElementById('total-reviews').textContent = reviews.length;
-    document.getElementById('active-users').textContent = '25'; // Example static data
-}
+        // Show default section
+        this.showSection('dashboard');
+    }
 
-// Display Products
-function displayProducts() {
-    const productsTable = document.getElementById('products-table');
-    
-    if (productsTable) {
-        productsTable.innerHTML = '';
-        
-        adminProducts.forEach(product => {
-            const row = document.createElement('tr');
+    showSection(section) {
+        // Hide all sections
+        document.querySelectorAll('.admin-section').forEach(sec => {
+            sec.classList.remove('active');
+        });
+
+        // Remove active class from all nav items
+        document.querySelectorAll('.nav-item').forEach(item => {
+            item.classList.remove('active');
+        });
+
+        // Show selected section
+        const targetSection = document.getElementById(section);
+        if (targetSection) {
+            targetSection.classList.add('active');
+        }
+
+        // Activate corresponding nav item
+        const activeNavItem = document.querySelector(`[data-section="${section}"]`);
+        if (activeNavItem) {
+            activeNavItem.classList.add('active');
+        }
+
+        // Load section data
+        this.loadSectionData(section);
+    }
+
+    async loadSectionData(section) {
+        switch (section) {
+            case 'products':
+                await this.loadProducts();
+                break;
+            case 'categories':
+                await this.loadCategories();
+                break;
+            case 'messages':
+                await this.loadMessages();
+                break;
+            case 'orders':
+                await this.loadOrders();
+                break;
+            case 'reviews':
+                await this.loadReviews();
+                break;
+            case 'wishlists':
+                await this.loadWishlists();
+                break;
+        }
+    }
+
+    // Data Loading Methods
+    async loadInitialData() {
+        await Promise.all([
+            this.loadProducts(),
+            this.loadCategories(),
+            this.loadMessages(),
+            this.loadReviews()
+        ]);
+    }
+
+    async loadDashboardStats() {
+        try {
+            const response = await fetch('/api/admin/stats');
+            if (response.ok) {
+                this.stats = await response.json();
+                this.renderStats();
+            }
+        } catch (error) {
+            console.error('Error loading stats:', error);
+        }
+    }
+
+    async loadProducts() {
+        try {
+            const response = await fetch('/api/products');
+            if (response.ok) {
+                this.products = await response.json();
+                this.renderProducts();
+            }
+        } catch (error) {
+            console.error('Error loading products:', error);
+            this.showAlert('Error loading products', 'error');
+        }
+    }
+
+    async loadCategories() {
+        try {
+            const response = await fetch('/api/categories');
+            if (response.ok) {
+                this.categories = await response.json();
+                this.renderCategories();
+            }
+        } catch (error) {
+            console.error('Error loading categories:', error);
+            this.showAlert('Error loading categories', 'error');
+        }
+    }
+
+    async loadOrders() {
+        try {
+            const response = await fetch('/api/admin/orders');
+            if (response.ok) {
+                this.orders = await response.json();
+                this.renderOrders();
+            }
+        } catch (error) {
+            console.error('Error loading orders:', error);
+            this.showAlert('Error loading orders', 'error');
+        }
+    }
+
+    renderOrders() {
+        const tbody = document.getElementById('orders-table');
+        if (!tbody) return;
+
+        tbody.innerHTML = this.orders.map(order => this.getOrderRowHTML(order)).join('');
+    }
+
+    getOrderRowHTML(order) {
+        return `
+            <tr>
+                <td>${order.id}</td>
+                <td>${order.order_number}</td>
+                <td>${order.user_name || 'User ' + order.user_id}</td>
+                <td>${order.items.length} items</td>
+                <td>GH₵${order.total_amount}</td>
+                <td class="status-${order.status}">${order.status}</td>
+                <td>${new Date(order.created_at).toLocaleDateString()}</td>
+                <td class="actions">
+                    <button class="edit-btn" onclick="adminManager.viewOrder(${order.id})">
+                        <i class="fas fa-eye"></i>
+                    </button>
+                    <button class="edit-btn" onclick="adminManager.updateOrderStatus(${order.id})">
+                        <i class="fas fa-edit"></i>
+                    </button>
+                </td>
+            </tr>
+        `;
+    }
+
+    async viewOrder(orderId) {
+        const order = this.orders.find(o => o.id === orderId);
+        if (order) {
+            const itemsHTML = order.items.map(item => `
+                <div>${item.name} - GH₵${item.price} x ${item.quantity}</div>
+            `).join('');
             
-            row.innerHTML = `
+            alert(`Order #${order.order_number}\n\nItems:\n${itemsHTML}\n\nTotal: GH₵${order.total_amount}\nStatus: ${order.status}`);
+        }
+    }
+
+    async updateOrderStatus(orderId) {
+        const newStatus = prompt('Enter new status (pending, processing, shipped, delivered, cancelled):');
+        if (newStatus) {
+            try {
+                const response = await fetch(`/api/admin/orders/${orderId}/status`, {
+                    method: 'PUT',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({ status: newStatus })
+                });
+
+                if (response.ok) {
+                    this.showAlert('Order status updated successfully!', 'success');
+                    await this.loadOrders();
+                } else {
+                    this.showAlert('Failed to update order status', 'error');
+                }
+            } catch (error) {
+                console.error('Update order status error:', error);
+                this.showAlert('Error updating order status', 'error');
+            }
+        }
+    }
+
+    async loadMessages() {
+        try {
+            const response = await fetch('/api/admin/messages');
+            if (response.ok) {
+                this.messages = await response.json();
+                this.renderMessages();
+            }
+        } catch (error) {
+            console.error('Error loading messages:', error);
+            this.showAlert('Error loading messages', 'error');
+        }
+    }
+
+    async loadReviews() {
+        try {
+            const response = await fetch('/api/reviews');
+            if (response.ok) {
+                this.reviews = await response.json();
+                this.renderReviews();
+            }
+        } catch (error) {
+            console.error('Error loading reviews:', error);
+            this.showAlert('Error loading reviews', 'error');
+        }
+    }
+
+    async loadWishlists() {
+        // This would typically fetch wishlist data from an admin endpoint
+        // For now, we'll show a placeholder
+        this.showAlert('Wishlist data loading feature coming soon!', 'info');
+    }
+
+    // Render Methods
+    renderStats() {
+        const stats = this.stats;
+        
+        if (stats.total_products !== undefined) {
+            document.getElementById('total-products').textContent = stats.total_products;
+        }
+        if (stats.total_messages !== undefined) {
+            document.getElementById('total-messages').textContent = stats.total_messages;
+        }
+        if (stats.total_reviews !== undefined) {
+            document.getElementById('total-reviews').textContent = stats.total_reviews;
+        }
+        if (stats.total_users !== undefined) {
+            document.getElementById('active-users').textContent = stats.total_users;
+        }
+    }
+
+    renderProducts() {
+        const tbody = document.getElementById('products-table');
+        if (!tbody) return;
+
+        tbody.innerHTML = this.products.map(product => this.getProductRowHTML(product)).join('');
+    }
+
+    getProductRowHTML(product) {
+        return `
+            <tr>
                 <td>${product.id}</td>
-                <td><img src="${product.image}" alt="${product.name}" class="table-image"></td>
+                <td>
+                    <img src="${product.image_url || '/static/assets/img/placeholder.jpg'}" 
+                         alt="${product.name}" 
+                         class="product-thumbnail"
+                         onerror="this.src='/static/assets/img/placeholder.jpg'">
+                </td>
                 <td>${product.name}</td>
                 <td>${product.brand}</td>
                 <td>GH₵${product.price}</td>
-                <td>${product.category}</td>
-                <td>
-                    <button class="action-btn edit-btn" data-id="${product.id}">Edit</button>
-                    <button class="action-btn delete-btn" data-id="${product.id}">Delete</button>
+                <td>${product.category_name || 'Uncategorized'}</td>
+                <td class="actions">
+                    <button class="edit-btn" onclick="adminManager.editProduct(${product.id})">
+                        <i class="fas fa-edit"></i>
+                    </button>
+                    <button class="delete-btn" onclick="adminManager.deleteProduct(${product.id})">
+                        <i class="fas fa-trash"></i>
+                    </button>
                 </td>
-            `;
-            
-            productsTable.appendChild(row);
-        });
-        
-        // Add event listeners for product actions
-        document.querySelectorAll('.edit-btn').forEach(btn => {
-            btn.addEventListener('click', editProduct);
-        });
-        
-        document.querySelectorAll('.delete-btn').forEach(btn => {
-            btn.addEventListener('click', deleteProduct);
-        });
+            </tr>
+        `;
     }
-}
 
-// Display Categories
-function displayCategories() {
-    const categoriesTable = document.getElementById('categories-table');
-    
-    if (categoriesTable) {
-        categoriesTable.innerHTML = '';
-        
-        categories.forEach(category => {
-            const row = document.createElement('tr');
-            
-            row.innerHTML = `
+    renderCategories() {
+        const tbody = document.getElementById('categories-table');
+        if (!tbody) return;
+
+        tbody.innerHTML = this.categories.map(category => this.getCategoryRowHTML(category)).join('');
+    }
+
+    getCategoryRowHTML(category) {
+        return `
+            <tr>
                 <td>${category.id}</td>
                 <td>${category.name}</td>
-                <td>${category.description}</td>
-                <td>
-                    <button class="action-btn edit-btn" data-id="${category.id}">Edit</button>
-                    <button class="action-btn delete-btn" data-id="${category.id}">Delete</button>
+                <td>${category.description || 'No description'}</td>
+                <td class="actions">
+                    <button class="edit-btn" onclick="adminManager.editCategory(${category.id})">
+                        <i class="fas fa-edit"></i>
+                    </button>
+                    <button class="delete-btn" onclick="adminManager.deleteCategory(${category.id})">
+                        <i class="fas fa-trash"></i>
+                    </button>
                 </td>
-            `;
-            
-            categoriesTable.appendChild(row);
-        });
+            </tr>
+        `;
     }
-}
 
-// Display Messages
-function displayMessages() {
-    const messagesTable = document.getElementById('messages-table');
-    
-    if (messagesTable) {
-        messagesTable.innerHTML = '';
-        
-        messages.forEach(message => {
-            const row = document.createElement('tr');
-            
-            row.innerHTML = `
+    renderMessages() {
+        const tbody = document.getElementById('messages-table');
+        if (!tbody) return;
+
+        tbody.innerHTML = this.messages.map(message => this.getMessageRowHTML(message)).join('');
+    }
+
+    getMessageRowHTML(message) {
+        return `
+            <tr>
                 <td>${message.id}</td>
                 <td>${message.name}</td>
                 <td>${message.email}</td>
-                <td>${message.message.substring(0, 50)}...</td>
-                <td>${message.date}</td>
-                <td>
-                    <button class="action-btn view-btn" data-id="${message.id}">View</button>
-                    <button class="action-btn delete-btn" data-id="${message.id}">Delete</button>
+                <td>${message.message.substring(0, 50)}${message.message.length > 50 ? '...' : ''}</td>
+                <td>${new Date(message.created_at).toLocaleDateString()}</td>
+                <td class="actions">
+                    <button class="edit-btn" onclick="adminManager.viewMessage(${message.id})">
+                        <i class="fas fa-eye"></i>
+                    </button>
+                    <button class="delete-btn" onclick="adminManager.deleteMessage(${message.id})">
+                        <i class="fas fa-trash"></i>
+                    </button>
                 </td>
-            `;
-            
-            messagesTable.appendChild(row);
-        });
+            </tr>
+        `;
     }
-}
 
-// Display Reviews
-function displayReviews() {
-    const reviewsTable = document.getElementById('reviews-table');
-    
-    if (reviewsTable) {
-        reviewsTable.innerHTML = '';
+    renderReviews() {
+        const tbody = document.getElementById('reviews-table');
+        if (!tbody) return;
+
+        tbody.innerHTML = this.reviews.map(review => this.getReviewRowHTML(review)).join('');
+    }
+
+    getReviewRowHTML(review) {
+        const stars = '★'.repeat(review.rating) + '☆'.repeat(5 - review.rating);
         
-        reviews.forEach(review => {
-            const row = document.createElement('tr');
-            
-            row.innerHTML = `
+        return `
+            <tr>
                 <td>${review.id}</td>
-                <td>${review.product}</td>
-                <td>${review.user}</td>
-                <td>${'★'.repeat(review.rating)}${'☆'.repeat(5-review.rating)}</td>
-                <td>${review.review.substring(0, 30)}...</td>
-                <td>${review.date}</td>
-                <td>
-                    <button class="action-btn view-btn" data-id="${review.id}">View</button>
-                    <button class="action-btn delete-btn" data-id="${review.id}">Delete</button>
+                <td>${review.product_name || 'Product ' + review.product_id}</td>
+                <td>${review.user_name || 'User ' + review.user_id}</td>
+                <td>${stars}</td>
+                <td>${review.comment.substring(0, 30)}${review.comment.length > 30 ? '...' : ''}</td>
+                <td>${new Date(review.created_at).toLocaleDateString()}</td>
+                <td class="actions">
+                    <button class="edit-btn ${review.is_approved ? 'active' : ''}" 
+                            onclick="adminManager.toggleReviewApproval(${review.id})">
+                        <i class="fas ${review.is_approved ? 'fa-check' : 'fa-times'}"></i>
+                    </button>
+                    <button class="delete-btn" onclick="adminManager.deleteReview(${review.id})">
+                        <i class="fas fa-trash"></i>
+                    </button>
                 </td>
-            `;
-            
-            reviewsTable.appendChild(row);
-        });
+            </tr>
+        `;
     }
-}
 
-// Display Wishlists
-function displayWishlists() {
-    const wishlistsTable = document.getElementById('wishlists-table');
-    
-    if (wishlistsTable) {
-        wishlistsTable.innerHTML = '';
+    // Form Management Methods
+    setupEventListeners() {
+        // Product form
+        this.setupProductForm();
         
-        // Get wishlist from localStorage (in real app, this would come from backend)
-        const wishlist = JSON.parse(localStorage.getItem('wishlist')) || [];
+        // Category form
+        this.setupCategoryForm();
         
-        if (wishlist.length === 0) {
-            wishlistsTable.innerHTML = `
-                <tr>
-                    <td colspan="3" style="text-align: center; padding: 20px;">
-                        No items in user wishlists
-                    </td>
-                </tr>
-            `;
-            return;
+        // Login form
+        this.setupLoginForm();
+    }
+
+    setupProductForm() {
+        const addBtn = document.getElementById('add-product-btn');
+        const cancelBtn = document.getElementById('cancel-product');
+        const form = document.getElementById('product-form');
+        const formModal = document.getElementById('add-product-form');
+
+        if (addBtn && formModal) {
+            addBtn.addEventListener('click', () => {
+                formModal.style.display = 'block';
+                this.populateCategoryDropdown();
+            });
         }
+
+        if (cancelBtn && formModal) {
+            cancelBtn.addEventListener('click', () => {
+                formModal.style.display = 'none';
+                form.reset();
+            });
+        }
+
+        if (form) {
+            form.addEventListener('submit', async (e) => {
+                e.preventDefault();
+                await this.addProduct();
+            });
+        }
+    }
+
+    setupCategoryForm() {
+        const addBtn = document.getElementById('add-category-btn');
+        const cancelBtn = document.getElementById('cancel-category');
+        const form = document.getElementById('category-form');
+        const formModal = document.getElementById('add-category-form');
+
+        if (addBtn && formModal) {
+            addBtn.addEventListener('click', () => {
+                formModal.style.display = 'block';
+            });
+        }
+
+        if (cancelBtn && formModal) {
+            cancelBtn.addEventListener('click', () => {
+                formModal.style.display = 'none';
+                form.reset();
+            });
+        }
+
+        if (form) {
+            form.addEventListener('submit', async (e) => {
+                e.preventDefault();
+                await this.addCategory();
+            });
+        }
+    }
+
+    setupLoginForm() {
+        const form = document.getElementById('login-form');
+        if (form) {
+            form.addEventListener('submit', async (e) => {
+                e.preventDefault();
+                const username = document.getElementById('username').value;
+                const password = document.getElementById('password').value;
+                await this.login(username, password);
+            });
+        }
+    }
+
+    // Data Management Methods
+    async addProduct() {
+        const form = document.getElementById('product-form');
+        const formData = new FormData(form);
         
-        wishlist.forEach(item => {
-            const row = document.createElement('tr');
-            
-            row.innerHTML = `
-                <td>${currentUser ? currentUser.fullName : 'Guest User'}</td>
-                <td>${item.name}</td>
-                <td>${new Date().toISOString().split('T')[0]}</td>
-            `;
-            
-            wishlistsTable.appendChild(row);
-        });
-    }
-}
+        // Validate required fields
+        const requiredFields = ['name', 'brand', 'price', 'category_id', 'stock_quantity'];
+        for (let field of requiredFields) {
+            if (!formData.get(field)) {
+                this.showAlert(`Please fill in the ${field.replace('_', ' ')} field`, 'error');
+                return;
+            }
+        }
 
-// Display Discounts
-function displayDiscounts() {
-    const discountsTable = document.getElementById('discounts-table');
-    
-    if (discountsTable) {
-        discountsTable.innerHTML = '';
+        try {
+            const response = await fetch('/api/admin/products', {
+                method: 'POST',
+                body: formData  // Send as FormData for file upload
+            });
+
+            if (response.ok) {
+                this.showAlert('Product added successfully!', 'success');
+                document.getElementById('add-product-form').style.display = 'none';
+                form.reset();
+                await this.loadProducts();
+                await this.loadDashboardStats();
+            } else {
+                const data = await response.json();
+                this.showAlert(data.error, 'error');
+            }
+        } catch (error) {
+            console.error('Add product error:', error);
+            this.showAlert('Error adding product', 'error');
+        }
+    }
+
+    async addCategory() {
+        const form = document.getElementById('category-form');
+        const formData = new FormData(form);
         
-        discounts.forEach(discount => {
-            const row = document.createElement('tr');
-            
-            row.innerHTML = `
-                <td>${discount.code}</td>
-                <td>${discount.percentage}%</td>
-                <td>${discount.startDate}</td>
-                <td>${discount.endDate}</td>
-                <td><span class="status-badge ${discount.status.toLowerCase()}">${discount.status}</span></td>
-                <td>
-                    <button class="action-btn edit-btn" data-id="${discount.code}">Edit</button>
-                    <button class="action-btn delete-btn" data-id="${discount.code}">Delete</button>
-                </td>
-            `;
-            
-            discountsTable.appendChild(row);
-        });
+        const categoryData = {
+            name: formData.get('name'),
+            description: formData.get('description'),
+            image_url: formData.get('image_url')
+        };
+
+        try {
+            const response = await fetch('/api/admin/categories', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify(categoryData)
+            });
+
+            if (response.ok) {
+                this.showAlert('Category added successfully!', 'success');
+                document.getElementById('add-category-form').style.display = 'none';
+                form.reset();
+                await this.loadCategories();
+                await this.loadDashboardStats();
+            } else {
+                const data = await response.json();
+                this.showAlert(data.error, 'error');
+            }
+        } catch (error) {
+            console.error('Add category error:', error);
+            this.showAlert('Error adding category', 'error');
+        }
+    }
+
+    // Edit Methods (Placeholder - would need additional endpoints)
+    editProduct(productId) {
+        this.showAlert('Edit product feature coming soon!', 'info');
+    }
+
+    editCategory(categoryId) {
+        this.showAlert('Edit category feature coming soon!', 'info');
+    }
+
+    // Delete Methods (Placeholder - would need additional endpoints)
+    deleteProduct(productId) {
+        if (confirm('Are you sure you want to delete this product?')) {
+            this.showAlert('Delete product feature coming soon!', 'info');
+        }
+    }
+
+    deleteCategory(categoryId) {
+        if (confirm('Are you sure you want to delete this category?')) {
+            this.showAlert('Delete category feature coming soon!', 'info');
+        }
+    }
+
+    deleteMessage(messageId) {
+        if (confirm('Are you sure you want to delete this message?')) {
+            this.showAlert('Delete message feature coming soon!', 'info');
+        }
+    }
+
+    deleteReview(reviewId) {
+        if (confirm('Are you sure you want to delete this review?')) {
+            this.showAlert('Delete review feature coming soon!', 'info');
+        }
+    }
+
+    // View Methods
+    viewMessage(messageId) {
+        const message = this.messages.find(m => m.id === messageId);
+        if (message) {
+            alert(`Message from ${message.name} (${message.email}):\n\n${message.message}`);
+        }
+    }
+
+    toggleReviewApproval(reviewId) {
+        this.showAlert('Review approval feature coming soon!', 'info');
+    }
+
+    // Utility Methods
+    populateCategoryDropdown() {
+        const categorySelect = document.getElementById('product-category');
+        if (categorySelect) {
+            categorySelect.innerHTML = '<option value="">Select Category</option>' +
+                this.categories.map(cat => 
+                    `<option value="${cat.id}">${cat.name}</option>`
+                ).join('');
+        }
+    }
+
+    showAlert(message, type = 'info') {
+        // Remove existing alerts
+        document.querySelectorAll('.admin-alert').forEach(alert => alert.remove());
+
+        const alert = document.createElement('div');
+        alert.className = `admin-alert admin-alert-${type}`;
+        alert.textContent = message;
+
+        const adminMain = document.querySelector('.admin-main');
+        if (adminMain) {
+            adminMain.insertBefore(alert, adminMain.firstChild);
+        }
+
+        // Auto remove after 5 seconds
+        setTimeout(() => {
+            if (alert.parentNode) {
+                alert.remove();
+            }
+        }, 5000);
     }
 }
 
-// Product Form Management
-function setupProductForm() {
-    const addProductBtn = document.getElementById('add-product-btn');
-    const cancelProductBtn = document.getElementById('cancel-product');
-    const productForm = document.getElementById('product-form');
-    
-    if (addProductBtn) {
-        addProductBtn.addEventListener('click', function() {
-            document.getElementById('add-product-form').style.display = 'block';
-        });
-    }
-    
-    if (cancelProductBtn) {
-        cancelProductBtn.addEventListener('click', function() {
-            document.getElementById('add-product-form').style.display = 'none';
-            productForm.reset();
-        });
-    }
-    
-    if (productForm) {
-        productForm.addEventListener('submit', function(e) {
-            e.preventDefault();
-            
-            const newProduct = {
-                id: adminProducts.length + 1,
-                name: document.getElementById('product-name').value,
-                brand: document.getElementById('product-brand').value,
-                price: parseFloat(document.getElementById('product-price').value),
-                category: document.getElementById('product-category').value,
-                description: document.getElementById('product-description').value,
-                image: document.getElementById('product-image').value
-            };
-            
-            adminProducts.push(newProduct);
-            displayProducts();
-            updateStats();
-            
-            document.getElementById('add-product-form').style.display = 'none';
-            this.reset();
-            
-            showAlert('Product added successfully!', 'success');
-        });
-    }
-    
-    // Populate category dropdown
-    const categorySelect = document.getElementById('product-category');
-    if (categorySelect) {
-        categorySelect.innerHTML = '<option value="">Select Category</option>';
-        categories.forEach(category => {
-            const option = document.createElement('option');
-            option.value = category.name.toLowerCase();
-            option.textContent = category.name;
-            categorySelect.appendChild(option);
-        });
-    }
-}
-
-// Category Form Management
-function setupCategoryForm() {
-    const addCategoryBtn = document.getElementById('add-category-btn');
-    const cancelCategoryBtn = document.getElementById('cancel-category');
-    const categoryForm = document.getElementById('category-form');
-    
-    if (addCategoryBtn) {
-        addCategoryBtn.addEventListener('click', function() {
-            document.getElementById('add-category-form').style.display = 'block';
-        });
-    }
-    
-    if (cancelCategoryBtn) {
-        cancelCategoryBtn.addEventListener('click', function() {
-            document.getElementById('add-category-form').style.display = 'none';
-            categoryForm.reset();
-        });
-    }
-    
-    if (categoryForm) {
-        categoryForm.addEventListener('submit', function(e) {
-            e.preventDefault();
-            
-            const newCategory = {
-                id: categories.length + 1,
-                name: document.getElementById('category-name').value,
-                description: document.getElementById('category-description').value
-            };
-            
-            categories.push(newCategory);
-            displayCategories();
-            
-            document.getElementById('add-category-form').style.display = 'none';
-            this.reset();
-            
-            showAlert('Category added successfully!', 'success');
-        });
-    }
-}
-
-// Discount Form Management
-function setupDiscountForm() {
-    const addDiscountBtn = document.getElementById('add-discount-btn');
-    const cancelDiscountBtn = document.getElementById('cancel-discount');
-    const discountForm = document.getElementById('discount-form');
-    
-    if (addDiscountBtn) {
-        addDiscountBtn.addEventListener('click', function() {
-            document.getElementById('add-discount-form').style.display = 'block';
-        });
-    }
-    
-    if (cancelDiscountBtn) {
-        cancelDiscountBtn.addEventListener('click', function() {
-            document.getElementById('add-discount-form').style.display = 'none';
-            discountForm.reset();
-        });
-    }
-    
-    if (discountForm) {
-        discountForm.addEventListener('submit', function(e) {
-            e.preventDefault();
-            
-            const newDiscount = {
-                code: document.getElementById('discount-code').value,
-                percentage: parseInt(document.getElementById('discount-percentage').value),
-                startDate: document.getElementById('discount-start').value,
-                endDate: document.getElementById('discount-end').value,
-                status: "Active"
-            };
-            
-            discounts.push(newDiscount);
-            displayDiscounts();
-            
-            document.getElementById('add-discount-form').style.display = 'none';
-            this.reset();
-            
-            showAlert('Discount added successfully!', 'info');
-        });
-    }
-}
-
-// Product Actions
-function editProduct(e) {
-    const productId = parseInt(e.target.getAttribute('data-id'));
-    const product = adminProducts.find(p => p.id === productId);
-    
-    if (product) {
-        // In a real app, this would open an edit form with pre-filled data
-        showAlert(`Editing product: ${product.name}`, 'info');
-    }
-}
-
-function deleteProduct(e) {
-    const productId = parseInt(e.target.getAttribute('data-id'));
-    
-    if (confirm('Are you sure you want to delete this product?')) {
-        adminProducts = adminProducts.filter(p => p.id !== productId);
-        displayProducts();
-        updateStats();
-        showAlert('Product deleted successfully!', 'info');
-    }
-}
-
-// Initialize Admin Interface
-document.addEventListener('DOMContentLoaded', function() {
-    setupLogin();
-    setupLogout();
-    setupNavigation();
+// Initialize admin manager when DOM is loaded
+document.addEventListener('DOMContentLoaded', () => {
+    window.adminManager = new AdminManager();
 });
