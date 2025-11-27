@@ -36,6 +36,8 @@ def init_database():
             email TEXT UNIQUE NOT NULL,
             full_name TEXT NOT NULL,
             password_hash TEXT NOT NULL,
+            phone TEXT, 
+            address TEXT,
             created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
             last_login TIMESTAMP,
             is_active BOOLEAN DEFAULT 1,

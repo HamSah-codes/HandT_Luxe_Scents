@@ -140,8 +140,8 @@
 .nav-item:hover,
 .nav-item.active {
     background: rgba(212, 175, 55, 0.1);
-    color: var(--gold);
-    border-left-color: var(--gold);
+    color: var(--amber);
+    border-left-color: var(--amber);
 }
 
 .nav-item i {
@@ -275,7 +275,7 @@
     box-shadow: 0 5px 15px rgba(0, 0, 0, 0.08);
     text-align: center;
     transition: all 0.3s ease;
-    border-left: 4px solid var(--gold);
+    border-left: 4px solid var(--amber);
 }
 
 .stat-card:hover {
@@ -654,7 +654,7 @@
     
     .nav-item.active {
         border-left: none;
-        border-bottom-color: var(--gold);
+        border-bottom-color: var(--amber);
     }
     
     .stats-grid {

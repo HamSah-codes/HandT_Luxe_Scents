@@ -13,6 +13,7 @@ class HTLuxeScents {
         this.setupModals();
         this.setupEventListeners();
         this.setupPageChangeListener();
+        this.setupActiveNavigation();
         this.updateCartCount();
         this.updateWishlistCount();
     }
@@ -255,6 +256,87 @@ class HTLuxeScents {
         this.setupSearch();
     }
 
+    // Active Navigation Management
+    setupActiveNavigation() {
+        this.updateActiveNavLink();
+        
+        // Update on URL changes
+        window.addEventListener('popstate', () => {
+            this.updateActiveNavLink();
+        });
+        
+        // Update on hash changes (for home page sections)
+        window.addEventListener('hashchange', () => {
+            this.updateActiveNavLink();
+        });
+        
+        // Update on scroll for home page sections
+        if (window.location.pathname === '/' || window.location.pathname === '/index.html') {
+            this.setupScrollSpy();
+        }
+    }
+
+    updateActiveNavLink() {
+        const currentPath = window.location.pathname;
+        const currentHash = window.location.hash;
+        
+        // Remove active class from all nav links
+        document.querySelectorAll('.nav-link').forEach(link => {
+            link.classList.remove('active');
+        });
+        
+        // Determine which link should be active
+        if (currentPath.includes('shop.html') || currentPath === '/shop') {
+            // Shop page
+            const shopLink = document.querySelector('a[href="/shop"]');
+            if (shopLink) shopLink.classList.add('active');
+        } else if (currentPath.includes('user-interface.html')) {
+            // User dashboard
+            const dashboardLink = document.querySelector('a[href="/user-interface.html"]');
+            if (dashboardLink) dashboardLink.classList.add('active');
+        } else if (currentHash) {
+            // Home page with hash (sections)
+            const sectionLink = document.querySelector(`a[href="${currentHash}"]`);
+            if (sectionLink) sectionLink.classList.add('active');
+        } else {
+            // Home page (default)
+            const homeLink = document.querySelector('a[href="/"]');
+            if (homeLink) homeLink.classList.add('active');
+        }
+    }
+
+    setupScrollSpy() {
+        const sections = document.querySelectorAll('section[id]');
+        const navLinks = document.querySelectorAll('.nav-link[href^="#"]');
+        
+        if (sections.length === 0 || navLinks.length === 0) return;
+        
+        const observerOptions = {
+            root: null,
+            rootMargin: '-20% 0px -60% 0px',
+            threshold: 0
+        };
+        
+        const observer = new IntersectionObserver((entries) => {
+            entries.forEach(entry => {
+                if (entry.isIntersecting) {
+                    // Remove active from all links
+                    navLinks.forEach(link => link.classList.remove('active'));
+                    
+                    // Add active to corresponding link
+                    const activeLink = document.querySelector(`a[href="#${entry.target.id}"]`);
+                    if (activeLink) {
+                        activeLink.classList.add('active');
+                    }
+                }
+            });
+        }, observerOptions);
+        
+        sections.forEach(section => {
+            observer.observe(section);
+        });
+    }
+
     setupSearch() {
         const searchInput = document.querySelector('.search-input');
         const searchBtn = document.querySelector('.search-btn');
@@ -263,15 +345,21 @@ class HTLuxeScents {
             const performSearch = () => {
                 const searchTerm = searchInput.value.trim();
                 if (searchTerm) {
-                    if (window.location.pathname.includes('shop.html')) {
-                        // If on shop page, use shop search
+                    // Store search term for the shop page to use
+                    sessionStorage.setItem('searchTerm', searchTerm);
+
+                    if (window.location.pathname.includes('/shop') || window.location.pathname.endsWith('/shop')) {
+                    // If already on shop page, trigger search immediately
                         if (window.shopManager) {
                             window.shopManager.searchProducts(searchTerm);
-                        }
                     } else {
                         // Redirect to shop with search term
                         window.location.href = `/shop?search=${encodeURIComponent(searchTerm)}`;
                     }
+                } else {
+                    // Redirect to shop with search term
+                    window.location.href = `/shop?search=${encodeURIComponent(searchTerm)}`;
+                }
                     searchInput.value = '';
                 }
             };
@@ -280,6 +368,16 @@ class HTLuxeScents {
             searchInput.addEventListener('keypress', (e) => {
                 if (e.key === 'Enter') {
                     performSearch();
+                }
+            });
+
+            // Clear search when input is cleared
+            searchInput.addEventListener('input', (e) => {
+                if (e.target.value === '' && window.location.pathname.includes('/shop')) {
+                    // If on shop page and search is cleared, show all products
+                    if (window.shopManager) {
+                        window.shopManager.clearSearch();
+                    }
                 }
             });
         }
@@ -727,6 +825,86 @@ class HTLuxeScents {
         }).format(price);
     }
 }
+
+function handleNavbarScroll() {
+    const navbar = document.querySelector('.navbar');
+    const hero = document.querySelector('.hero');
+    
+    console.log('=== SCROLL DEBUG ===');
+    console.log('Scroll Y:', window.scrollY);
+    console.log('Navbar top:', navbar.offsetTop);
+    console.log('Hero height:', hero.offsetHeight);
+    console.log('Hero bottom:', hero.offsetTop + hero.offsetHeight);
+    
+    if (!hero || !navbar) {
+        console.log('Missing elements!');
+        return;
+    }
+    
+    const heroBottom = hero.offsetTop + hero.offsetHeight;
+    const scrollPosition = window.scrollY;
+    const triggerPoint = heroBottom - 200;
+    
+    console.log('Trigger point:', triggerPoint);
+    console.log('Should add scrolled class:', scrollPosition > triggerPoint);
+    
+    if (scrollPosition > triggerPoint) {
+        navbar.classList.add('scrolled');
+        console.log('✅ Added scrolled class');
+    } else {
+        navbar.classList.remove('scrolled');
+        console.log('❌ Removed scrolled class');
+    }
+    console.log('====================');
+}
+
+
+function initNavbarScroll() {
+    console.log('🔄 Initializing navbar scroll detection');
+    
+    const navbar = document.querySelector('.navbar');
+    const hero = document.querySelector('.hero');
+    
+    if (!navbar || !hero) {
+        console.error('❌ Navbar or hero not found');
+        return;
+    }
+    
+    function checkScroll() {
+        const scrollY = window.scrollY;
+        const heroBottom = hero.offsetTop + hero.offsetHeight;
+        
+        console.log(`📜 Scroll: ${scrollY}px, Hero bottom: ${heroBottom}px`);
+        
+        // Add scrolled class when we've scrolled past the hero section
+        // Using a small offset to trigger slightly before hero completely disappears
+        if (scrollY > heroBottom - 150) {
+            navbar.classList.add('scrolled');
+            console.log('🎯 Navbar now has solid background');
+        } else {
+            navbar.classList.remove('scrolled');
+            console.log('↩️ Navbar is transparent over hero');
+        }
+    }
+    
+    // Check immediately on load
+    checkScroll();
+    
+    // Check on scroll
+    window.addEventListener('scroll', checkScroll);
+    
+    console.log('✅ Navbar scroll detection active');
+}
+
+// Initialize when DOM is ready
+document.addEventListener('DOMContentLoaded', function() {
+    console.log('🚀 DOM ready - starting navbar scroll');
+    initNavbarScroll();
+});
+
+// Also initialize on window load as backup
+window.addEventListener('load', initNavbarScroll);
+
 
 // Global functions for HTML onclick attributes
 function switchToSignup() {

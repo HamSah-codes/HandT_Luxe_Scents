@@ -10,7 +10,7 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
 </head>
 <body>
-    <!-- Sticky Banner 
+    <!-- Sticky Banner -->
     <div class="sticky-banner">
         <div class="banner-container">
             <span class="banner-text">✨ Free Shipping on Orders Over GH₵2000 | Limited Time Offer</span>
@@ -18,7 +18,7 @@
                 <i class="fas fa-phone"></i> Call Now: +233 591 373 371
             </a>
         </div>
-    </div> -->
+    </div> 
     <!-- Christmas Sticky Banner 
     <div class="sticky-banner">
         <div class="banner-container">
@@ -60,22 +60,26 @@
                     <span class="bar"></span>
                 </div>
 
-                <!-- Logo -->
-                <div class="nav-logo">
-                    <h1>H&T Luxe Scents</h1>
-                </div>
+
 
                 <!-- Navigation Menu -->
-                <div class="nav-menu">
-                    <a href="{{ url_for('index') }}" class="nav-link">Home</a>
-                    <a href="{{ url_for('shop') }}" class="nav-link active">Shop</a>
+                <div class="nav-left">
+                    <a href="{{ url_for('index') }}" class="nav-link active">Home</a>
                     <a href="{{ url_for('index') }}#collections" class="nav-link">Collections</a>
-                    <a href="{{ url_for('index') }}#about" class="nav-link">About</a>
-                    <a href="{{ url_for('index') }}#contact" class="nav-link">Contact</a>
+                    <a href="{{ url_for('shop') }}" class="nav-link">Shop</a>
+                    <a href="#about" class="nav-link">About</a>
+                    <a href="#contact" class="nav-link">Contact</a>
+                </div>
+
+                <!-- Logo -->
+                <div class="nav-logo">
+                    <a href="{{ url_for('index') }}" style="text-decoration: none;">
+                        <h1>H&T Luxe Scents</h1>
+                    </a>
                 </div>
 
                 <!-- Right Side Actions -->
-                <div class="nav-actions">
+                <div class="nav-right">
                     <!-- Search Bar -->
                     <div class="search-container">
                         <input type="text" class="search-input" placeholder="Search fragrances...">
@@ -337,7 +341,7 @@
                 </div>
             </div>
             <div class="footer-bottom">
-                <p>&copy; 2024 H&T Luxe Scents. All rights reserved.</p>
+                <p>&copy; 2025 H&T Luxe Scents. All rights reserved.</p>
                 <a href="{{ url_for('admin_dashboard') }}" class="admin-link">Admin Login</a>
             </div>
         </div>

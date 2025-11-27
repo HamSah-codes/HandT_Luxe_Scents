@@ -1,6 +1,12 @@
 /* Shop Page Styles */
 .shop-header {
-    background: linear-gradient(135deg, var(--navy) 0%, var(--dark-navy) 100%);
+    background: linear-gradient(to bottom, 
+            rgba(11, 1, 33, 0.81) 0%,
+            rgba(11, 1, 33, 0.81) 40%,
+            rgba(11, 1, 33, 0.81) 40%,
+            var(--navy) 100%),
+        url('/static/assets/img/perfumes.png') center center;
+    background-size: cover;
     color: var(--white);
     padding: 120px 0 60px;
     text-align: center;
@@ -46,7 +52,66 @@
 }
 
 .filter-group {
-    margin-bottom: 30px;
+    margin-bottom: 25px;
+    position: relative;
+    border: 1px solid var(--light-gray);
+    border-radius: 10px;
+    padding: 15px;
+    transition: all 0.3s ease;
+}
+
+.filter-group:hover {
+    border-color: var(--amber);
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+}
+
+.filter-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    cursor: pointer;
+    padding: 0;
+    margin-bottom: 15px;
+    border: none;
+}
+
+.filter-header h4 {
+    margin: 0;
+    color: var(--navy);
+    font-size: 1rem;
+    font-weight: 600;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.filter-header h4 i {
+    color: var(--amber);
+    font-size: 0.9rem;
+}
+
+.filter-toggle {
+    background: none;
+    border: none;
+    color: var(--charcoal);
+    cursor: pointer;
+    font-size: 0.8rem;
+    transition: all 0.3s ease;
+    width: 24px;
+    height: 24px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 4px;
+}
+
+.filter-toggle:hover {
+    background: var(--light-gray);
+    color: var(--navy);
+}
+
+.filter-toggle.collapsed {
+    transform: rotate(-90deg);
 }
 
 .filter-group h4 {
@@ -76,7 +141,7 @@
 }
 
 .filter-btn:hover {
-    background: var(--gold);
+    background: var(--amber);
     color: var(--navy);
     transform: translateX(5px);
 }
@@ -84,12 +149,14 @@
 .filter-btn.active {
     background: var(--navy);
     color: var(--white);
-    border-color: var(--gold);
+    border-color: var(--amber);
 }
 
 .price-range {
     padding: 10px 0;
 }
+
+
 
 .slider {
     width: 100%;
@@ -106,7 +173,7 @@
     width: 20px;
     height: 20px;
     border-radius: 50%;
-    background: var(--gold);
+    background: var(--amber);
     cursor: pointer;
     border: 2px solid var(--white);
     box-shadow: 0 2px 6px rgba(0, 0, 0, 0.2);
@@ -116,7 +183,7 @@
     width: 20px;
     height: 20px;
     border-radius: 50%;
-    background: var(--gold);
+    background: var(--amber);
     cursor: pointer;
     border: 2px solid var(--white);
     box-shadow: 0 2px 6px rgba(0, 0, 0, 0.2);
@@ -183,7 +250,7 @@
 
 .sort-options select:focus {
     outline: none;
-    border-color: var(--gold);
+    border-color: var(--amber);
 }
 
 /* Enhanced Product Grid for Shop */
@@ -211,7 +278,7 @@
     position: absolute;
     top: 15px;
     left: 15px;
-    background: var(--gold);
+    background: var(--amber);
     color: var(--navy);
     padding: 5px 10px;
     border-radius: 12px;
@@ -275,7 +342,7 @@
 
 .wishlist-btn:hover,
 .quick-view-btn:hover {
-    background: var(--gold);
+    background: var(--amber);
     color: var(--white);
     transform: scale(1.1);
 }
@@ -302,7 +369,7 @@
 
 .product-price {
     font-size: 1.3rem;
-    color: var(--gold);
+    color: var(--amber);
     font-weight: 700;
     margin-bottom: 15px;
 }
@@ -339,7 +406,7 @@
 }
 
 .add-to-cart-btn:hover {
-    background: var(--gold);
+    background: var(--amber);
     transform: translateY(-2px);
 }
 
@@ -359,7 +426,7 @@
 
 .loading-state i {
     font-size: 3rem;
-    color: var(--gold);
+    color: var(--amber);
     margin-bottom: 20px;
 }
 
@@ -424,7 +491,7 @@
 
 .quick-view-price {
     font-size: 2rem;
-    color: var(--gold);
+    color: var(--amber);
     font-weight: 700;
     margin-bottom: 20px;
 }
@@ -487,8 +554,8 @@
 }
 
 .quantity-btn:hover {
-    border-color: var(--gold);
-    color: var(--gold);
+    border-color: var(--amber);
+    color: var(--amber);
 }
 
 .quantity-display {

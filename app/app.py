@@ -86,6 +86,28 @@ def init_db():
         else:
             print("Database tables already exist.")
 
+             # ADD THIS: Check and add missing columns to existing tables
+            try:
+                # Check if phone column exists in users table
+                cursor.execute("PRAGMA table_info(users)")
+                columns = [column[1] for column in cursor.fetchall()]
+                
+                if 'phone' not in columns:
+                    print("Adding phone column to users table...")
+                    cursor.execute("ALTER TABLE users ADD COLUMN phone TEXT")
+                
+                if 'address' not in columns:
+                    print("Adding address column to users table...")
+                    cursor.execute("ALTER TABLE users ADD COLUMN address TEXT")
+                    
+                conn.commit()
+                print("Database schema updated successfully!")
+                
+            except Exception as e:
+                print(f"Schema update error: {e}")
+                conn.rollback()
+
+
     except Exception as e:
         print(f"Database initialization error: {e}")
     finally:
@@ -101,6 +123,8 @@ def create_essential_tables(cursor):
             email TEXT UNIQUE NOT NULL,
             full_name TEXT NOT NULL,
             password_hash TEXT NOT NULL,
+            phone TEXT, 
+            address TEXT, 
             created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
             last_login TIMESTAMP,
             is_active BOOLEAN DEFAULT 1,
@@ -571,7 +595,7 @@ def update_user_profile():
     
     try:
         cursor.execute(
-            'UPDATE users SET full_name = ? WHERE id = ?',
+            'UPDATE users SET full_name = ?, phone = ?, address = ? WHERE id = ?',
             (data['fullName'], data.get('phone', ''), data.get('address', ''), user['id'])
         )
         conn.commit()
