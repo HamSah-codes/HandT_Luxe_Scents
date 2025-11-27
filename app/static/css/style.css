@@ -268,7 +268,7 @@ h1, h2, h3, h4, h5, h6 {
     position: fixed;
     left: 0; /* Match container padding */
     top: 0;
-    transform: translate(20%,150%);
+    transform: translate(15%,150%);
     display: flex;
     align-items: center;
     gap: 30px;

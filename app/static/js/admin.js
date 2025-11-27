@@ -58,13 +58,23 @@ class AdminManager {
 
     async logout() {
         try {
-            await fetch('/api/admin/logout');
-            location.reload();
+            console.log('Logging out...');
+            const response = await fetch('/api/admin/logout', {
+                method: 'POST', // Ensure it's POST, not GET
+                credentials: 'include'
+            });
+            
+            console.log('Logout response status:', response.status);
+            
+            // Instead of reloading, redirect to the same page to clear any cached state
+            window.location.href = window.location.href + '?logout=' + Date.now();
+            
         } catch (error) {
             console.error('Logout error:', error);
+            // Still redirect even if there's an error
+            window.location.href = window.location.href;
         }
     }
-
     // Navigation Methods
     setupNavigation() {
         const navItems = document.querySelectorAll('.nav-item');
@@ -79,9 +89,10 @@ class AdminManager {
         // Logout button
         const logoutBtn = document.getElementById('logout-btn');
         if (logoutBtn) {
-            logoutBtn.addEventListener('click', () => {
+            logoutBtn.onclick = (e) => {
+                e.preventDefault();
                 this.logout();
-            });
+            };
         }
 
         // Show default section
@@ -154,9 +165,14 @@ class AdminManager {
             if (response.ok) {
                 this.stats = await response.json();
                 this.renderStats();
+            } else {
+                console.error('Failed to load stats, status:', response.status);
+                // Set default values if API fails
+                this.setDefaultStats();
             }
         } catch (error) {
             console.error('Error loading stats:', error);
+            this.setDefaultStats();
         }
     }
 
@@ -188,10 +204,16 @@ class AdminManager {
 
     async loadOrders() {
         try {
-            const response = await fetch('/api/admin/orders');
+            const response = await fetch('/api/admin/orders', {
+                credentials: 'include' 
+            });
+
             if (response.ok) {
                 this.orders = await response.json();
                 this.renderOrders();
+            } else {
+                console.error('Failed to load orders');
+                this.showAlert('Error loading orders', 'error');
             }
         } catch (error) {
             console.error('Error loading orders:', error);
@@ -203,15 +225,32 @@ class AdminManager {
         const tbody = document.getElementById('orders-table');
         if (!tbody) return;
 
+        if (!this.orders || this.orders.length === 0) {
+            tbody.innerHTML = `
+                <tr>
+                    <td colspan="8" class="no-data">No orders found</td>
+                </tr>
+            `;
+            return;
+        }
+
         tbody.innerHTML = this.orders.map(order => this.getOrderRowHTML(order)).join('');
     }
 
     getOrderRowHTML(order) {
+        // Get customer display name with fallbacks
+        const customerDisplay = order.user_name || 
+                            order.user_email || 
+                            order.customer_name || 
+                            order.email ||
+                            `User ${order.user_id}`;
+    
+
         return `
             <tr>
                 <td>${order.id}</td>
                 <td>${order.order_number}</td>
-                <td>${order.user_name || 'User ' + order.user_id}</td>
+                <td>${customerDisplay}</td>
                 <td>${order.items.length} items</td>
                 <td>GH₵${order.total_amount}</td>
                 <td class="status-${order.status}">${order.status}</td>
@@ -231,28 +270,94 @@ class AdminManager {
     async viewOrder(orderId) {
         const order = this.orders.find(o => o.id === orderId);
         if (order) {
-            const itemsHTML = order.items.map(item => `
-                <div>${item.name} - GH₵${item.price} x ${item.quantity}</div>
-            `).join('');
+            const itemsHTML = order.items.map(item => {
+                // Handle different possible property names
+                const itemName = item.name || item.product_name || 'Unknown Item';
+                const itemPrice = item.price || item.unit_price || 0;
+                const itemQuantity = item.quantity || 1;
+                
+                return `${itemName} - GH₵${itemPrice} x ${itemQuantity}`;
+            }).join('');
             
             alert(`Order #${order.order_number}\n\nItems:\n${itemsHTML}\n\nTotal: GH₵${order.total_amount}\nStatus: ${order.status}`);
         }
     }
 
+    async viewOrderDetails(orderId) {
+        try {
+            const response = await fetch(`/api/admin/orders/${orderId}`, {
+                credentials: 'include'
+            });
+            
+            if (response.ok) {
+                const orderData = await response.json();
+                this.showOrderDetailsModal(orderData);
+            } else {
+                this.showAlert('Failed to load order details', 'error');
+            }
+        } catch (error) {
+            console.error('Error loading order details:', error);
+            this.showAlert('Error loading order details', 'error');
+        }
+    }
+
+
     async updateOrderStatus(orderId) {
-        const newStatus = prompt('Enter new status (pending, processing, shipped, delivered, cancelled):');
-        if (newStatus) {
+        const validStatuses = ['pending', 'processing', 'shipped', 'delivered', 'cancelled'];
+        const currentOrder = this.orders.find(o => o.id === orderId);
+        const currentStatus = currentOrder ? currentOrder.status : 'pending';
+        
+        // Create modal with dropdown
+        const modalHTML = `
+            <div class="modal-overlay" id="status-modal">
+                <div class="modal-content">
+                    <div class="modal-header">
+                        <h3>Update Order Status</h3>
+                        <button class="close-btn" onclick="this.closest('.modal-overlay').remove()">&times;</button>
+                    </div>
+                    <div class="modal-body">
+                        <p><strong>Order #:</strong> ${currentOrder.order_number}</p>
+                        <p><strong>Current Status:</strong> <span class="status-${currentStatus}">${currentStatus}</span></p>
+                        
+                        <label for="status-select"><strong>New Status:</strong></label>
+                        <select id="status-select" class="status-select">
+                            ${validStatuses.map(status => 
+                                `<option value="${status}" ${status === currentStatus ? 'selected' : ''}>${status}</option>`
+                            ).join('')}
+                        </select>
+                    </div>
+                    <div class="modal-footer">
+                        <button class="btn btn-cancel" onclick="this.closest('.modal-overlay').remove()">Cancel</button>
+                        <button class="btn btn-primary" id="confirm-status-update">Update Status</button>
+                    </div>
+                </div>
+            </div>
+        `;
+        
+        // Remove existing modal if any
+        document.querySelectorAll('#status-modal').forEach(modal => modal.remove());
+        
+        // Add new modal to page
+        document.body.insertAdjacentHTML('beforeend', modalHTML);
+        
+        // Add event listener for the update button
+        document.getElementById('confirm-status-update').addEventListener('click', async () => {
+            const selectElement = document.getElementById('status-select');
+            const newStatus = selectElement.value;
+            
             try {
                 const response = await fetch(`/api/admin/orders/${orderId}/status`, {
                     method: 'PUT',
                     headers: {
                         'Content-Type': 'application/json'
                     },
+                    credentials: 'include',
                     body: JSON.stringify({ status: newStatus })
                 });
 
                 if (response.ok) {
                     this.showAlert('Order status updated successfully!', 'success');
+                    document.querySelector('#status-modal').remove();
                     await this.loadOrders();
                 } else {
                     this.showAlert('Failed to update order status', 'error');
@@ -261,8 +366,11 @@ class AdminManager {
                 console.error('Update order status error:', error);
                 this.showAlert('Error updating order status', 'error');
             }
-        }
+        });
     }
+        
+
+    
 
     async loadMessages() {
         try {
@@ -302,15 +410,32 @@ class AdminManager {
         
         if (stats.total_products !== undefined) {
             document.getElementById('total-products').textContent = stats.total_products;
+        } else {
+            document.getElementById('total-products').textContent = '0';
         }
+
         if (stats.total_messages !== undefined) {
             document.getElementById('total-messages').textContent = stats.total_messages;
+        } else {
+            document.getElementById('total-messages').textContent = '0';
         }
+
         if (stats.total_reviews !== undefined) {
             document.getElementById('total-reviews').textContent = stats.total_reviews;
+        } else {
+            document.getElementById('total-reviews').textContent = '0';
         }
+
         if (stats.total_users !== undefined) {
-            document.getElementById('active-users').textContent = stats.total_users;
+            document.getElementById('total-users').textContent = stats.total_users;
+        } else {
+            document.getElementById('total-users').textContent = '0';
+        }
+
+        if (stats.total_orders !== undefined) {
+            document.getElementById('total-orders').textContent = stats.total_orders;
+        } else {
+            document.getElementById('total-orders').textContent = '0';
         }
     }
 

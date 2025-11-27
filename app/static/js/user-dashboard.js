@@ -266,6 +266,57 @@ class UserDashboard {
         }
     }
 
+    async loadInitialCounts() {
+        try {
+            const sessionToken = localStorage.getItem('sessionToken');
+            
+            // Load wishlist count
+            const wishlistResponse = await fetch('/api/wishlist', {
+                headers: { 'Authorization': sessionToken }
+            });
+            
+            if (wishlistResponse.ok) {
+                const wishlistItems = await wishlistResponse.json();
+                this.updateSidebarWishlistCount(wishlistItems.length);
+            }
+            
+            // Load cart count (for consistency)
+            const cartResponse = await fetch('/api/cart', {
+                headers: { 'Authorization': sessionToken }
+            });
+            
+            if (cartResponse.ok) {
+                const cartData = await cartResponse.json();
+                this.updateSidebarCartCount(cartData.item_count || 0);
+            }
+            
+        } catch (error) {
+            console.error('Load initial counts error:', error);
+        }
+    }
+
+    updateSidebarWishlistCount(count) {
+        // Update the sidebar wishlist counter specifically
+        const sidebarWishlistCounter = document.querySelector('.user-nav-item[data-section="wishlist"] .count-badge, .user-nav-item[data-section="wishlist"] .wishlist-count-badge');
+        if (sidebarWishlistCounter) {
+            sidebarWishlistCounter.textContent = count;
+            console.log(`❤️ Sidebar wishlist counter updated to: ${count}`);
+        } else {
+            console.log('❌ Sidebar wishlist counter element not found');
+            // Let's check what elements exist for debugging
+            const navItems = document.querySelectorAll('.user-nav-item[data-section="wishlist"] *');
+            console.log('Wishlist nav item children:', navItems);
+        }
+    }
+
+    updateSidebarCartCount(count) {
+        // Update the sidebar cart counter specifically
+        const sidebarCartCounter = document.querySelector('.user-nav-item[data-section="cart"] .count-badge, .user-nav-item[data-section="cart"] .cart-count-badge');
+        if (sidebarCartCounter) {
+            sidebarCartCounter.textContent = count;
+        }
+    }
+
     async updateProfile() {
         const formData = new FormData(document.getElementById('profile-form'));
         const data = {
@@ -547,11 +598,19 @@ class UserDashboard {
                 const wishlistItems = await response.json();
                 const wishlistGrid = document.getElementById('wishlist-grid');
                 const clearBtn = document.getElementById('clear-wishlist-btn');
+
+
+                // Update sidebar counter specifically
+                this.updateSidebarWishlistCount(wishlistItems.length);
                 
-                // Update badge count
-                document.querySelectorAll('.wishlist-count-badge').forEach(badge => {
+                // Update other wishlist badges
+                document.querySelectorAll('.wishlist-count-badge:not(.user-nav-item .wishlist-count-badge)').forEach(badge => {
                     badge.textContent = wishlistItems.length;
                 });
+                
+                // Update ALL wishlist count badges - INCLUDING SIDEBAR
+                this.updateWishlistBadges(wishlistItems.length); // Add this line
+                this.renderWishlistGrid(wishlistItems);
 
                 if (wishlistItems.length === 0) {
                     wishlistGrid.innerHTML = `
@@ -591,6 +650,22 @@ class UserDashboard {
             console.error('Load wishlist error:', error);
             document.getElementById('wishlist-grid').innerHTML = '<p>Error loading wishlist. Please try again.</p>';
         }
+    }
+
+    // Add this new method to update all wishlist badges
+    updateWishlistBadges(count) {
+        // Update ALL wishlist count elements throughout the entire page
+        document.querySelectorAll('.wishlist-count, .wishlist-count-badge, [data-wishlist-count]').forEach(el => {
+            el.textContent = count;
+        });
+        
+        // Also update the specific sidebar counter in user dashboard
+        const sidebarWishlistCounter = document.querySelector('.user-nav-item[data-section="wishlist"] .count-badge');
+        if (sidebarWishlistCounter) {
+            sidebarWishlistCounter.textContent = count;
+        }
+        
+        console.log(`❤️ All wishlist badges updated to: ${count}`);
     }
 
     async loadCart() {
@@ -665,30 +740,70 @@ class UserDashboard {
     }
 
     async cancelOrder(orderId) {
-        if (!confirm('Are you sure you want to cancel this order?')) {
-            return;
-        }
+    // Create a confirmation modal
+    const confirmationModal = `
+        <div id="cancel-confirmation-modal" class="modal" style="display: block;">
+            <div class="modal-content cancel-confirmation-modal">
+                <h3>Cancel Order?</h3>
+                <p>Are you sure you want to cancel this order? This action cannot be undone.</p>
+                <div class="cancel-modal-actions">
+                    <button class="confirm-cancel-btn" onclick="userDashboard.confirmCancelOrder(${orderId})">
+                        Yes, Cancel Order
+                    </button>
+                    <button class="cancel-cancel-btn" onclick="document.getElementById('cancel-confirmation-modal').remove()">
+                        No, Keep Order
+                    </button>
+                </div>
+            </div>
+        </div>
+    `;
+    
+    // Remove existing modal
+    const existingModal = document.getElementById('cancel-confirmation-modal');
+    if (existingModal) existingModal.remove();
+    
+    // Add new modal
+    document.body.insertAdjacentHTML('beforeend', confirmationModal);
+}
 
-        try {
-            const sessionToken = localStorage.getItem('sessionToken');
-            const response = await fetch(`/api/orders/${orderId}/cancel`, {
-                method: 'POST',
-                headers: {
-                    'Authorization': sessionToken
-                }
-            });
-
-            if (response.ok) {
-                this.showAlert('Order cancelled successfully', 'success');
-                this.loadOrders(); // Reload orders
-            } else {
-                this.showAlert('Failed to cancel order', 'error');
+async confirmCancelOrder(orderId) {
+    try {
+        const sessionToken = localStorage.getItem('sessionToken');
+        console.log(`🗑️ Cancelling order ${orderId}...`);
+        
+        const response = await fetch(`/api/orders/${orderId}/cancel`, {
+            method: 'POST',
+            headers: {
+                'Authorization': sessionToken,
+                'Content-Type': 'application/json'
             }
-        } catch (error) {
-            console.error('Cancel order error:', error);
-            this.showAlert('Error cancelling order', 'error');
+        });
+
+        // Remove confirmation modal
+        const modal = document.getElementById('cancel-confirmation-modal');
+        if (modal) modal.remove();
+
+        if (response.ok) {
+            const result = await response.json();
+            console.log('✅ Order cancelled:', result);
+            
+            this.showAlert('Order cancelled successfully', 'success');
+            this.loadOrders(); // Reload orders to reflect changes
+            
+            // Close order details modal if open
+            const orderDetailsModal = document.getElementById('order-details-modal');
+            if (orderDetailsModal) orderDetailsModal.remove();
+            
+        } else {
+            const error = await response.json();
+            console.error('❌ Cancel order failed:', error);
+            this.showAlert(error.error || 'Failed to cancel order', 'error');
         }
+    } catch (error) {
+        console.error('❌ Cancel order error:', error);
+        this.showAlert('Error cancelling order: ' + error.message, 'error');
     }
+}
 
     async proceedToCheckout() {
         try {
@@ -917,25 +1032,82 @@ class UserDashboard {
             });
 
             if (response.ok) {
-                // Update wishlist count immediately
-                await this.updateWishlistCount();
-
-                this.showAlert('Product removed from wishlist', 'success');
-                this.loadWishlist(); // Reload to show updated list
+                // Update the sidebar counter immediately using the response data
+                // Most APIs return the updated wishlist or count after deletion
+                const result = await response.json();
                 
-                // Update main app wishlist count
-                //if (window.app) {
-                    //window.app.updateWishlistCount();
-                //}
-            } else {
-                const error = await response.json();
-                this.showAlert(error.error || 'Error removing from wishlist', 'error');
+                // Option 1: If API returns updated count
+                if (result.updated_count !== undefined) {
+                    this.updateSidebarWishlistCount(result.updated_count);
+                } 
+                // Option 2: If API returns updated wishlist
+                else if (result.wishlist_items) {
+                    this.updateSidebarWishlistCount(result.wishlist_items.length);
+                }
+                // Option 3: Fallback - make one API call to get updated data
+                else {
+                    const updatedResponse = await fetch('/api/wishlist', {
+                        headers: { 'Authorization': sessionToken }
+                    });
+                    if (updatedResponse.ok) {
+                        const wishlistItems = await updatedResponse.json();
+                        this.updateSidebarWishlistCount(wishlistItems.length);
+                        // Also update the wishlist grid without another API call
+                        this.renderWishlistGrid(wishlistItems);
+                    }
+                }
+
+                    this.showAlert('Product removed from wishlist', 'success');
+
+                } else {
+                    const error = await response.json();
+                    this.showAlert(error.error || 'Error removing from wishlist', 'error');
+                }
+            } catch (error) {
+                console.error('Remove from wishlist error:', error);
+                this.showAlert('Error removing from wishlist', 'error');
             }
-        } catch (error) {
-            console.error('Remove from wishlist error:', error);
-            this.showAlert('Error removing from wishlist', 'error');
         }
-    }
+
+        // Add this method to render the wishlist grid without making API calls
+        renderWishlistGrid(wishlistItems) {
+            const wishlistGrid = document.getElementById('wishlist-grid');
+            const clearBtn = document.getElementById('clear-wishlist-btn');
+            
+            if (wishlistItems.length === 0) {
+                wishlistGrid.innerHTML = `
+                    <div class="empty-state">
+                        <i class="fas fa-heart"></i>
+                        <h3>Your Wishlist is Empty</h3>
+                        <p>Start adding products you love to your wishlist.</p>
+                        <a href="/shop" class="shop-now-btn">Explore Products</a>
+                    </div>
+                `;
+                if (clearBtn) clearBtn.style.display = 'none';
+            } else {
+                wishlistGrid.innerHTML = wishlistItems.map(item => `
+                    <div class="wishlist-item">
+                        <button class="wishlist-remove" onclick="userDashboard.removeFromWishlist(${item.product_id})">
+                            <i class="fas fa-times"></i>
+                        </button>
+                        <img src="${item.image_url || '/static/assets/img/placeholder.jpg'}" 
+                            alt="${item.name}"
+                            onerror="this.src='/static/assets/img/placeholder.jpg'">
+                        <div class="wishlist-item-info">
+                            <h4>${item.name}</h4>
+                            <p>${item.brand}</p>
+                            <div class="wishlist-price">GH₵${item.price}</div>
+                            <div class="wishlist-actions">
+                                <button class="move-to-cart" onclick="userDashboard.moveToCart(${item.product_id})">
+                                    <i class="fas fa-shopping-cart"></i> Add to Cart
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                `).join('');
+                if (clearBtn) clearBtn.style.display = 'block';
+            }
+        }
 
     async clearWishlist() {
         if (!confirm('Are you sure you want to clear your entire wishlist?')) {
