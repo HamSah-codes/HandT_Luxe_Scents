@@ -23,7 +23,7 @@ app.secret_key = os.environ.get('SECRET_KEY', 'ht-luxe-scents-secret-key-2024')
 app.config['SESSION_COOKIE_HTTPONLY'] = True
 app.config['SESSION_COOKIE_SECURE'] = False  # Set to True in production with HTTPS
 app.config['SESSION_COOKIE_SAMESITE'] = 'Lax'
-CORS(app)
+CORS(app, supports_credentials=True)
 
 app.config['UPLOAD_FOLDER'] = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'static', 'uploads')
 app.config['MAX_CONTENT_LENGTH'] = 16 * 1024 * 1024  # 16MB max file size
@@ -326,49 +326,68 @@ def validate_email(email):
 
 
 def send_whatsapp_order_notification(order_data, customer_phone, shipping_address):
-    """Send order notification via direct WhatsApp link"""
-    try: 
-        # Format order message
-        order_items = "\n".join([f"• {item['name']} (Qty: {item['quantity']}) - GH₵{item['price']}" 
-                               for item in order_data['items']])
+    """Enhanced WhatsApp notification with better formatting"""
+    try:
+        # Your business WhatsApp number (without +)
+        BUSINESS_WHATSAPP = "233591373371"  # Replace with your actual number
+        
+        # Format order message with emojis and clear structure
+        order_items = "\n".join([
+            f"• {item['name']} (Qty: {item['quantity']}) - GH₵{item['price']} each"
+            for item in order_data['items']
+        ])
         
         message = f"""
-🛍️ NEW ORDER RECEIVED!
+🛍️ *NEW ORDER - H&T Luxe Scents* 🛍️
 
-Order #: {order_data['order_number']}
-Customer: {order_data['customer_name']}
-Phone: {customer_phone}
-Total: GH₵{order_data['total_amount']}
+*ORDER DETAILS:*
+────────────────
+📦 *Order #:* {order_data['order_number']}
+👤 *Customer:* {order_data['customer_name']}
+📞 *Phone:* {customer_phone}
+💰 *Total:* GH₵{order_data['total_amount']}
+📅 *Date:* {order_data['order_date']}
 
-📦 Shipping Address:
+*SHIPPING ADDRESS:*
+──────────────────
 {shipping_address}
 
-🛒 Order Items:
+*ORDER ITEMS:*
+──────────────
 {order_items}
 
-Order Date: {order_data['order_date']}
+*NEXT STEPS:*
+─────────────
+✅ Order saved in system
+📞 Contact customer within 24 hours
+🚚 Prepare order for shipping
+
+_Generated automatically by H&T Luxe Scents Website_
         """.strip()
 
-        # Your business WhatsApp number (without +)
-        your_whatsapp_number = "233591373371"  # Your actual number
-        
-        # Create WhatsApp URL that opens with pre-filled message
+        # Create WhatsApp URL
         encoded_message = requests.utils.quote(message)
-        whatsapp_url = f"https://wa.me/{your_whatsapp_number}?text={encoded_message}"
+        whatsapp_url = f"https://wa.me/{BUSINESS_WHATSAPP}?text={encoded_message}"
         
         print("=" * 60)
         print("📱 WHATSAPP ORDER NOTIFICATION READY")
         print("=" * 60)
-        print(f"🔗 Click this link to send: {whatsapp_url}")
+        print("🔗 **COPY THIS LINK TO SEND ORDER:**")
+        print(whatsapp_url)
         print("=" * 60)
-        print(f"📝 Message: {message}")
+        print("💬 **MESSAGE PREVIEW:**")
+        print(message)
         print("=" * 60)
-        return True
         
+        return {
+            'success': True,
+            'whatsapp_url': whatsapp_url,
+            'message': 'WhatsApp notification ready - click link to send'
+        }
         
     except Exception as e:
-        print(f"WhatsApp notification error: {e}")
-        return False
+        print(f"❌ WhatsApp notification error: {e}")
+        return {'success': False, 'error': str(e)}
 
 
 # Routes
@@ -923,7 +942,7 @@ def checkout():
         cursor.execute('''
             INSERT INTO orders (user_id, order_number, total_amount, shipping_address, status)
             VALUES (?, ?, ?, ?, ?)
-        ''', (user['id'], order_number, total_amount, shipping_address, 'confirmed'))
+        ''', (user['id'], order_number, total_amount, shipping_address, 'pending'))
         
         order_id = cursor.lastrowid
         
@@ -1159,6 +1178,56 @@ def get_order_details(order_id):
         print(f"Order details error: {e}")
         return jsonify({'error': 'Failed to load order details'}), 500
 
+@app.route('/api/orders/<int:order_id>/cancel', methods=['POST'])
+@login_required
+def cancel_order(order_id):
+    """Cancel an order (only for pending orders)"""
+    session_token = request.headers.get('Authorization')
+    user = get_user_from_session(session_token)
+    
+    conn = get_db_connection()
+    cursor = conn.cursor()
+    
+    try:
+        # Get the order and verify it belongs to the user
+        cursor.execute('''
+            SELECT * FROM orders 
+            WHERE id = ? AND user_id = ?
+        ''', (order_id, user['id']))
+        order = cursor.fetchone()
+        
+        if not order:
+            return jsonify({'error': 'Order not found'}), 404
+        
+        # Check if order can be cancelled (only pending orders)
+        if order['status'] != 'pending':
+            return jsonify({'error': 'Only pending orders can be cancelled'}), 400
+        
+        # Update order status to cancelled
+        cursor.execute('''
+            UPDATE orders 
+            SET status = 'cancelled', updated_at = datetime('now')
+            WHERE id = ?
+        ''', (order_id,))
+        
+        conn.commit()
+        
+        return jsonify({
+            'message': 'Order cancelled successfully',
+            'order': {
+                'id': order_id,
+                'status': 'cancelled'
+            }
+        })
+        
+    except Exception as e:
+        conn.rollback()
+        print(f"Cancel order error: {e}")
+        return jsonify({'error': 'Failed to cancel order'}), 500
+    finally:
+        conn.close()
+    
+
 # Admin API Routes
 @app.route('/api/admin/login', methods=['POST'])
 def admin_login():
@@ -1200,6 +1269,7 @@ def get_dashboard_stats():
     total_messages = cursor.execute('SELECT COUNT(*) FROM messages').fetchone()[0]
     total_reviews = cursor.execute('SELECT COUNT(*) FROM reviews').fetchone()[0]
     total_users = cursor.execute('SELECT COUNT(*) FROM users').fetchone()[0]
+    total_orders = cursor.execute('SELECT COUNT(*) FROM orders').fetchone()[0]
     
     conn.close()
     
@@ -1207,7 +1277,9 @@ def get_dashboard_stats():
         'total_products': total_products,
         'total_messages': total_messages,
         'total_reviews': total_reviews,
-        'total_users': total_users
+        'total_users': total_users,
+        'total_orders': total_orders
+        
     })
 
 @app.route('/api/admin/products', methods=['POST'])
@@ -1325,6 +1397,144 @@ def get_messages():
     conn.close()
     
     return jsonify([dict(message) for message in messages])
+
+
+# Admin Orders API
+@app.route('/api/admin/orders')
+def get_admin_orders():
+    if not session.get('admin_logged_in'):
+        return jsonify({'error': 'Unauthorized'}), 401
+    
+    conn = get_db_connection()
+    cursor = conn.cursor()
+    
+    try:
+        # Get all orders with user information
+        cursor.execute('''
+            SELECT 
+                o.*,
+                u.full_name as customer_name,
+                u.email as customer_email,
+                u.phone as customer_phone,
+                (SELECT COUNT(*) FROM order_items oi WHERE oi.order_id = o.id) as item_count
+            FROM orders o
+            LEFT JOIN users u ON o.user_id = u.id
+            ORDER BY o.created_at DESC
+        ''')
+        orders = cursor.fetchall()
+        
+        # Get order items for each order
+        orders_with_items = []
+        for order in orders:
+            cursor.execute('''
+                SELECT 
+                    oi.*,
+                    p.name as product_name,
+                    p.brand as product_brand,
+                    p.image_url as product_image
+                FROM order_items oi
+                JOIN products p ON oi.product_id = p.id
+                WHERE oi.order_id = ?
+            ''', (order['id'],))
+            items = cursor.fetchall()
+            
+            order_dict = dict(order)
+            order_dict['items'] = [dict(item) for item in items]
+            orders_with_items.append(order_dict)
+        
+        return jsonify(orders_with_items)
+        
+    except Exception as e:
+        print(f"Admin orders error: {e}")
+        return jsonify({'error': 'Failed to load orders'}), 500
+    finally:
+        conn.close()
+
+# Admin Order Details
+@app.route('/api/admin/orders/<int:order_id>')
+def get_admin_order_details(order_id):
+    if not session.get('admin_logged_in'):
+        return jsonify({'error': 'Unauthorized'}), 401
+    
+    conn = get_db_connection()
+    cursor = conn.cursor()
+    
+    try:
+        # Get order basic info
+        cursor.execute('''
+            SELECT 
+                o.*,
+                u.full_name as customer_name,
+                u.email as customer_email,
+                u.phone as customer_phone
+            FROM orders o
+            LEFT JOIN users u ON o.user_id = u.id
+            WHERE o.id = ?
+        ''', (order_id,))
+        order = cursor.fetchone()
+        
+        if not order:
+            return jsonify({'error': 'Order not found'}), 404
+        
+        # Get order items
+        cursor.execute('''
+            SELECT 
+                oi.*,
+                p.name as product_name,
+                p.brand as product_brand,
+                p.image_url as product_image
+            FROM order_items oi
+            JOIN products p ON oi.product_id = p.id
+            WHERE oi.order_id = ?
+        ''', (order_id,))
+        items = cursor.fetchall()
+        
+        return jsonify({
+            'order': dict(order),
+            'items': [dict(item) for item in items]
+        })
+        
+    except Exception as e:
+        print(f"Admin order details error: {e}")
+        return jsonify({'error': 'Failed to load order details'}), 500
+    finally:
+        conn.close()
+
+# Update Order Status
+@app.route('/api/admin/orders/<int:order_id>/status', methods=['PUT'])
+def update_order_status(order_id):
+    if not session.get('admin_logged_in'):
+        return jsonify({'error': 'Unauthorized'}), 401
+    
+    data = request.get_json()
+    new_status = data.get('status')
+    
+    if not new_status:
+        return jsonify({'error': 'Status is required'}), 400
+    
+    valid_statuses = ['pending', 'confirmed', 'processing', 'shipped', 'delivered', 'cancelled']
+    if new_status not in valid_statuses:
+        return jsonify({'error': 'Invalid status'}), 400
+    
+    conn = get_db_connection()
+    cursor = conn.cursor()
+    
+    try:
+        cursor.execute('''
+            UPDATE orders 
+            SET status = ?, updated_at = datetime('now')
+            WHERE id = ?
+        ''', (new_status, order_id))
+        
+        conn.commit()
+        return jsonify({'message': 'Order status updated successfully'})
+        
+    except Exception as e:
+        conn.rollback()
+        print(f"Update order status error: {e}")
+        return jsonify({'error': 'Failed to update order status'}), 500
+    finally:
+        conn.close()
 
 @app.route('/api/contact', methods=['POST'])
 def submit_contact():

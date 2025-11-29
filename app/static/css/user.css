@@ -716,6 +716,81 @@ a.icon-link:hover {
 .status-delivered { background: #d1ecf1; color: #0c5460; }
 .status-cancelled { background: #f8d7da; color: #721c24; }
 
+.cancel-order-btn {
+    background-color: var(--error);
+    color: white;
+    border-radius: 8%;
+    border: none;
+    padding: 10px 20px;
+}
+
+.cancel-order-btn:hover {
+    background-color: #ff5252;
+    transform: translateY(-2px);
+    box-shadow: 0 4px 8px rgba(255, 107, 107, 0.3);
+}
+
+.cancel-order-btn:disabled {
+    background-color: #cccccc;
+    cursor: not-allowed;
+    transform: none;
+    box-shadow: none;
+}
+
+/* Confirmation Modal for Cancel */
+.cancel-confirmation-modal {
+    background: white;
+    border-radius: 12px;
+    padding: 30px;
+    max-width: 400px;
+    text-align: center;
+}
+
+.cancel-confirmation-modal h3 {
+    color: #e74c3c;
+    margin-bottom: 15px;
+}
+
+.cancel-confirmation-modal p {
+    margin-bottom: 20px;
+    color: #666;
+    line-height: 1.5;
+}
+
+.cancel-modal-actions {
+    display: flex;
+    gap: 15px;
+    justify-content: center;
+}
+
+.confirm-cancel-btn {
+    background-color: #e74c3c;
+    color: white;
+    border: none;
+    padding: 10px 20px;
+    border-radius: 6px;
+    cursor: pointer;
+    font-weight: 600;
+}
+
+.confirm-cancel-btn:hover {
+    background-color: #c0392b;
+}
+
+.cancel-cancel-btn {
+    background-color: #95a5a6;
+    color: white;
+    border: none;
+    padding: 10px 20px;
+    border-radius: 6px;
+    cursor: pointer;
+    font-weight: 600;
+}
+
+.cancel-cancel-btn:hover {
+    background-color: #7f8c8d;
+}
+
 .order-items-list {
     display: flex;
     flex-direction: column;
