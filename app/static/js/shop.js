@@ -19,6 +19,7 @@ class ShopManager {
         await this.loadCategories();
         await this.loadProducts();
         this.setupEventListeners();
+        this.setupSearch();
         this.setupFilters();
         this.renderProducts();
     }
@@ -196,6 +197,134 @@ class ShopManager {
         // Reapply filters
         this.applyFilters();
         this.showAlert('Filters cleared', 'success');
+    }
+
+    // Search functionality
+    setupSearch() {
+        // Check for search term in URL or session storage
+        const urlParams = new URLSearchParams(window.location.search);
+        const searchTerm = urlParams.get('search') || sessionStorage.getItem('searchTerm');
+        
+        if (searchTerm) {
+            this.searchProducts(searchTerm);
+            // Clear the stored search term after using it
+            sessionStorage.removeItem('searchTerm');
+        }
+
+        // Also handle search from the search box on shop page
+        const searchInput = document.querySelector('.search-input');
+        const searchBtn = document.querySelector('.search-btn');
+        
+        if (searchInput && searchBtn) {
+            const performSearch = () => {
+                const term = searchInput.value.trim();
+                if (term) {
+                    this.searchProducts(term);
+                    // Update URL without reloading page
+                    const newUrl = new URL(window.location);
+                    newUrl.searchParams.set('search', term);
+                    window.history.pushState({}, '', newUrl);
+                }
+            };
+
+            searchBtn.addEventListener('click', performSearch);
+            searchInput.addEventListener('keypress', (e) => {
+                if (e.key === 'Enter') {
+                    performSearch();
+                }
+            });
+
+            // Pre-fill search input if there's a search term
+            if (searchTerm) {
+                searchInput.value = searchTerm;
+            }
+        }
+    }
+
+    async searchProducts(searchTerm) {
+        try {
+            this.showLoading();
+            
+            // Build search URL with all current filters plus search term
+            const searchParams = new URLSearchParams();
+            
+            // Add current filters
+            if (this.currentCategory && this.currentCategory !== 'all') {
+                searchParams.append('category', this.currentCategory);
+            }
+            if (this.currentScentType && this.currentScentType !== 'all') {
+                searchParams.append('scent_type', this.currentScentType);
+            }
+            if (this.currentGender && this.currentGender !== 'all') {
+                searchParams.append('gender', this.currentGender);
+            }
+            if (this.currentMinPrice) {
+                searchParams.append('min_price', this.currentMinPrice);
+            }
+            if (this.currentMaxPrice) {
+                searchParams.append('max_price', this.currentMaxPrice);
+            }
+            
+            // Add search term
+            searchParams.append('search', searchTerm);
+
+            const response = await fetch(`/api/products?${searchParams.toString()}`);
+            const products = await response.json();
+
+            this.displayProducts(products);
+            this.updateProductCount(products.length);
+            this.showSearchResultsHeader(searchTerm, products.length);
+            
+        } catch (error) {
+            console.error('Search error:', error);
+            this.showAlert('Error searching products', 'error');
+        }
+    }
+
+    clearSearch() {
+        // Clear search from URL
+        const newUrl = new URL(window.location);
+        newUrl.searchParams.delete('search');
+        window.history.pushState({}, '', newUrl);
+        
+        // Clear search input
+        const searchInput = document.querySelector('.search-input');
+        if (searchInput) {
+            searchInput.value = '';
+        }
+        
+        // Reload products without search
+        this.loadProducts();
+    }
+
+    showSearchResultsHeader(searchTerm, resultCount) {
+        const productsGrid = document.getElementById('products-grid');
+        const existingHeader = document.querySelector('.search-results-header');
+        
+        if (existingHeader) {
+            existingHeader.remove();
+        }
+
+        if (searchTerm && searchTerm.trim() !== '') {
+            const header = document.createElement('div');
+            header.className = 'search-results-header';
+            header.innerHTML = `
+                <div style="text-align: center; margin: 20px 0; padding: 20px; background: var(--light-gray); border-radius: 10px;">
+                    <h3 style="color: var(--navy); margin-bottom: 10px;">
+                        Search Results for "${searchTerm}"
+                    </h3>
+                    <p style="color: var(--text-soft);">
+                        Found ${resultCount} product${resultCount !== 1 ? 's' : ''}
+                    </p>
+                    <button onclick="window.shopManager.clearSearch()" 
+                            style="margin-top: 10px; padding: 8px 16px; background: var(--amber); color: white; border: none; border-radius: 20px; cursor: pointer;">
+                        Clear Search
+                    </button>
+                </div>
+            `;
+            
+            productsGrid.parentNode.insertBefore(header, productsGrid);
+        }
     }
 
     // Sort Methods

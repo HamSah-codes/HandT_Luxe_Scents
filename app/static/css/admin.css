@@ -6,6 +6,9 @@
     min-height: 100vh;
     background: linear-gradient(135deg, var(--navy) 0%, var(--dark-navy) 100%);
     padding: 20px;
+    margin: 0 !important; /* Add this */
+    width: 100vw !important; /* Add this */
+    box-sizing: border-box !important; /* Add this */
 }
 
 .login-container {
@@ -15,6 +18,8 @@
     box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
     width: 100%;
     max-width: 400px;
+    margin: 0 auto !important; /* Ensure auto centering */
+    box-sizing: border-box !important;
 }
 
 .login-form h2 {
@@ -63,18 +68,24 @@
     background: var(--white);
     box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
     position: fixed;
-    width: 100%;
+    width: 100vw !important;
     top: 0;
     z-index: 1000;
+    left: 0 !important;
+    right: 0 !important;
+    margin: 0 !important;
+    padding: 0 !important;
 }
 
 .admin-nav {
     display: flex;
     justify-content: space-between;
     align-items: center;
-    padding: 15px 40px;
-    max-width: 1400px;
-    margin: 0 auto;
+    padding: 15px 30px !important;
+    max-width: none !important;
+    margin: 0 !important;
+    width: 100% !important;
+    box-sizing: border-box !important;
 }
 
 .admin-logo h1 {
@@ -140,8 +151,8 @@
 .nav-item:hover,
 .nav-item.active {
     background: rgba(212, 175, 55, 0.1);
-    color: var(--gold);
-    border-left-color: var(--gold);
+    color: var(--amber);
+    border-left-color: var(--amber);
 }
 
 .nav-item i {
@@ -275,7 +286,7 @@
     box-shadow: 0 5px 15px rgba(0, 0, 0, 0.08);
     text-align: center;
     transition: all 0.3s ease;
-    border-left: 4px solid var(--gold);
+    border-left: 4px solid var(--amber);
 }
 
 .stat-card:hover {
@@ -530,6 +541,52 @@
     background: rgba(255, 255, 255, 0.1);
 }
 
+
+.status-select {
+    width: 100%;
+    padding: 8px 12px;
+    border: 1px solid #ddd;
+    border-radius: 4px;
+    font-size: 14px;
+    margin: 10px 0;
+}
+
+.modal-footer {
+    display: flex;
+    justify-content: flex-end;
+    gap: 10px;
+    margin-top: 20px;
+    padding-top: 15px;
+    border-top: 1px solid #eee;
+}
+
+.btn {
+    padding: 8px 16px;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+    font-size: 14px;
+}
+
+.btn-cancel {
+    background: #6c757d;
+    color: white;
+}
+
+.btn-primary {
+    background: #007bff;
+    color: white;
+}
+
+.btn:hover {
+    opacity: 0.8;
+}
+
+.status-select option {
+    padding: 8px;
+}
+
+
 /* ========== RESPONSIVE DESIGN ========== */
 
 /* Extra Large Screens (1920px and above) */
@@ -654,7 +711,7 @@
     
     .nav-item.active {
         border-left: none;
-        border-bottom-color: var(--gold);
+        border-bottom-color: var(--amber);
     }
     
     .stats-grid {
